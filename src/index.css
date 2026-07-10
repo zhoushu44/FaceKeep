@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: "Aptos", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #08111f;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(15, 23, 42, 0.78);
+  padding: 0.75rem 1rem;
+  color: rgb(226, 232, 240);
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: 180ms ease;
+}
+
+.action-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(57, 230, 210, 0.65);
+  background: rgba(57, 230, 210, 0.1);
+  color: white;
+}
+
+.mini-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(2, 6, 23, 0.45);
+  padding: 0.5rem 0.625rem;
+  color: rgb(203, 213, 225);
+  font-size: 0.75rem;
+  transition: 160ms ease;
+}
+
+.mini-button:hover {
+  border-color: rgba(57, 230, 210, 0.55);
+  color: white;
+}
+
+.info-card {
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.68);
+  padding: 0.75rem;
+}
+
+.info-card span {
+  display: block;
+  color: rgb(100, 116, 139);
+}
+
+.info-card strong {
+  margin-top: 0.25rem;
+  display: block;
+  color: white;
+  font-size: 0.95rem;
+}
+
+.download-button,
+.secondary-download {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 1rem;
+  padding: 0.875rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  transition: 180ms ease;
+}
+
+.download-button {
+  background: rgb(57, 230, 210);
+  color: rgb(2, 6, 23);
+  box-shadow: 0 18px 45px rgba(57, 230, 210, 0.18);
+}
+
+.secondary-download {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.74);
+  color: rgb(226, 232, 240);
+}
+
+.download-button:hover,
+.secondary-download:hover {
+  transform: translateY(-1px);
+}
+
+.admin-label {
+  margin-top: 0.875rem;
+  display: block;
+  color: rgb(148, 163, 184);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.admin-input {
+  margin-top: 0.375rem;
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.74);
+  padding: 0.75rem 0.875rem;
+  color: white;
+  outline: none;
+}
+
+.admin-input:focus {
+  border-color: rgba(57, 230, 210, 0.65);
+  box-shadow: 0 0 0 3px rgba(57, 230, 210, 0.12);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.35);
+}
