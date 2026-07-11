@@ -1,9 +1,7 @@
 import { ArrowLeft, LogIn } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { login } from "@/lib/api";
-
-const SESSION_KEY = "facekeep_user_api_key";
+import { ADMIN_SESSION_KEY, USER_SESSION_KEY, login } from "@/lib/api";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -17,7 +15,8 @@ export default function Login() {
     setMessage("");
     try {
       const user = await login(username, password);
-      localStorage.setItem(SESSION_KEY, user.apiKey);
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      localStorage.setItem(USER_SESSION_KEY, user.apiKey);
       navigate("/user");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "登录失败");

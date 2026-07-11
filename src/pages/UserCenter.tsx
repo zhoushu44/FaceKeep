@@ -1,10 +1,8 @@
-import { ArrowLeft, Clipboard, Coins, KeyRound, LogOut, RefreshCw, UserRound } from "lucide-react";
+import { ArrowLeft, Clipboard, KeyRound, LogOut, RefreshCw, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { fetchMe, fetchMyCreditRecords } from "@/lib/api";
+import { USER_SESSION_KEY, fetchMe, fetchMyCreditRecords } from "@/lib/api";
 import type { CreditRecord, UserAccount } from "@/types";
-
-const SESSION_KEY = "facekeep_user_api_key";
 
 export default function UserCenter() {
   const navigate = useNavigate();
@@ -12,7 +10,7 @@ export default function UserCenter() {
   const [records, setRecords] = useState<CreditRecord[]>([]);
   const [message, setMessage] = useState("");
 
-  const apiKey = localStorage.getItem(SESSION_KEY) || "";
+  const apiKey = localStorage.getItem(USER_SESSION_KEY) || "";
 
   const reload = async () => {
     if (!apiKey) {
@@ -26,7 +24,7 @@ export default function UserCenter() {
 
   useEffect(() => {
     reload().catch(() => {
-      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(USER_SESSION_KEY);
       navigate("/login");
     });
   }, []);
@@ -38,7 +36,7 @@ export default function UserCenter() {
   };
 
   const logout = () => {
-    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(USER_SESSION_KEY);
     navigate("/login");
   };
 
@@ -74,9 +72,10 @@ export default function UserCenter() {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-300/10 p-4">
-                <div className="flex items-center gap-2 text-sm text-amber-100"><Coins className="h-4 w-4" /> 当前积分</div>
-                <div className="mt-2 text-4xl font-black text-amber-200">{user.credits}</div>
+              <div className="mt-4 grid grid-cols-3 gap-3">
+                <div className="rounded-2xl border border-amber-300/30 bg-amber-300/10 p-4"><div className="text-xs text-amber-100">当前余额</div><div className="mt-2 text-2xl font-black text-amber-200">{user.credits}</div></div>
+                <div className="rounded-2xl border border-emerald-300/30 bg-emerald-300/10 p-4"><div className="text-xs text-emerald-100">累计增加</div><div className="mt-2 text-2xl font-black text-emerald-200">{records.reduce((sum, record) => sum + Math.max(0, record.amount), 0)}</div></div>
+                <div className="rounded-2xl border border-rose-300/30 bg-rose-300/10 p-4"><div className="text-xs text-rose-100">累计消费</div><div className="mt-2 text-2xl font-black text-rose-200">{records.reduce((sum, record) => sum + Math.max(0, -record.amount), 0)}</div></div>
               </div>
 
               <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-900/70 p-4">

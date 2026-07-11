@@ -2,7 +2,10 @@ from functools import lru_cache
 from io import BytesIO
 from pathlib import Path
 import hashlib
+import hmac
 import json
+import os
+import secrets
 import shutil
 import uuid
 import zipfile
@@ -27,6 +30,24 @@ app.add_middleware(
 )
 
 BASE_DIR = Path(__file__).resolve().parent
+
+
+def load_env() -> None:
+    env_file = BASE_DIR / ".env"
+    if not env_file.exists():
+        return
+    for raw_line in env_file.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+load_env()
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
+ADMIN_TOKENS: set[str] = set()
 STORAGE_DIR = BASE_DIR / "uploads"
 CHUNKS_DIR = STORAGE_DIR / "chunks"
 FILES_DIR = STORAGE_DIR / "files"
@@ -171,6 +192,15 @@ def public_user(user: dict) -> dict:
     }
 
 
+def require_admin(authorization: str | None) -> str:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Administrator authentication required")
+    token = authorization.removeprefix("Bearer ").strip()
+    if not token or token not in ADMIN_TOKENS:
+        raise HTTPException(status_code=401, detail="Invalid administrator token")
+    return token
+
+
 def find_user_by_key(api_key: str | None) -> dict:
     if not api_key:
         raise HTTPException(status_code=401, detail="API key is required")
@@ -206,17 +236,28 @@ def count_heads(source_path: Path) -> int:
     return max(1, len(faces))
 
 
-def deduct_credit_for_task(meta: dict, user_id: str, task_id: str, amount: int) -> dict:
+def deduct_credit_for_task(meta: dict, user_id: str, task_id: str) -> dict:
     user = meta.get("users", {}).get(user_id)
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
-    amount = max(1, int(amount))
-    if int(user.get("credits", 0)) < amount:
+    if int(user.get("credits", 0)) < 1:
         raise HTTPException(status_code=402, detail="Insufficient credits")
-    user["credits"] = int(user.get("credits", 0)) - amount
+    user["credits"] = int(user.get("credits", 0)) - 1
     user["updatedAt"] = utc_now()
-    add_credit_record(meta, user_id, -amount, user["credits"], "task_image_cost", task_id)
+    add_credit_record(meta, user_id, -1, user["credits"], "task_image_cost", task_id)
     return user
+
+
+def refund_failed_task(meta: dict, task: dict) -> None:
+    if task.get("creditRefunded"):
+        return
+    user = meta.get("users", {}).get(task.get("userId"))
+    if not user:
+        return
+    user["credits"] = int(user.get("credits", 0)) + 1
+    user["updatedAt"] = utc_now()
+    task["creditRefunded"] = True
+    add_credit_record(meta, user["id"], 1, user["credits"], "failed_task_refund", task["taskId"])
 
 
 def find_file(file_id: str) -> dict:
@@ -283,6 +324,7 @@ def run_image_task(task_id: str) -> None:
         task = meta.get("tasks", {}).get(task_id)
         if task:
             task.update({"status": "failed", "progress": 100, "error": str(exc), "updatedAt": utc_now()})
+            refund_failed_task(meta, task)
             save_meta(meta)
 
 
@@ -324,15 +366,41 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.post("/api/admin/login")
+def admin_login(payload: LoginRequest) -> dict:
+    if not ADMIN_USERNAME or not ADMIN_PASSWORD:
+        raise HTTPException(status_code=503, detail="Administrator credentials are not configured")
+    if not hmac.compare_digest(payload.username, ADMIN_USERNAME) or not hmac.compare_digest(payload.password, ADMIN_PASSWORD):
+        raise HTTPException(status_code=401, detail="Invalid administrator credentials")
+    token = secrets.token_urlsafe(48)
+    ADMIN_TOKENS.add(token)
+    return {"token": token}
+
+
+@app.get("/api/admin/session")
+def admin_session(authorization: str | None = Header(default=None)) -> dict:
+    require_admin(authorization)
+    return {"authenticated": True}
+
+
+@app.post("/api/admin/logout")
+def admin_logout(authorization: str | None = Header(default=None)) -> dict:
+    token = require_admin(authorization)
+    ADMIN_TOKENS.discard(token)
+    return {"ok": True}
+
+
 @app.get("/api/admin/users")
-def list_users() -> dict:
+def list_users(authorization: str | None = Header(default=None)) -> dict:
+    require_admin(authorization)
     ensure_storage()
     meta = load_meta()
     return {"users": [public_user(user) for user in meta.get("users", {}).values()]}
 
 
 @app.post("/api/admin/users")
-def create_user(payload: CreateUserRequest) -> dict:
+def create_user(payload: CreateUserRequest, authorization: str | None = Header(default=None)) -> dict:
+    require_admin(authorization)
     ensure_storage()
     meta = load_meta()
     username = payload.username.strip()
@@ -364,7 +432,8 @@ def create_user(payload: CreateUserRequest) -> dict:
 
 
 @app.patch("/api/admin/users/{user_id}")
-def update_user(user_id: str, payload: UpdateUserRequest) -> dict:
+def update_user(user_id: str, payload: UpdateUserRequest, authorization: str | None = Header(default=None)) -> dict:
+    require_admin(authorization)
     meta = load_meta()
     user = meta.get("users", {}).get(user_id)
     if not user:
@@ -393,7 +462,8 @@ def update_user(user_id: str, payload: UpdateUserRequest) -> dict:
 
 
 @app.post("/api/admin/users/{user_id}/credits/adjust")
-def adjust_user_credits(user_id: str, payload: AdjustCreditsRequest) -> dict:
+def adjust_user_credits(user_id: str, payload: AdjustCreditsRequest, authorization: str | None = Header(default=None)) -> dict:
+    require_admin(authorization)
     meta = load_meta()
     user = meta.get("users", {}).get(user_id)
     if not user:
@@ -409,7 +479,8 @@ def adjust_user_credits(user_id: str, payload: AdjustCreditsRequest) -> dict:
 
 
 @app.post("/api/admin/users/{user_id}/credits/set")
-def set_user_credits(user_id: str, payload: SetCreditsRequest) -> dict:
+def set_user_credits(user_id: str, payload: SetCreditsRequest, authorization: str | None = Header(default=None)) -> dict:
+    require_admin(authorization)
     meta = load_meta()
     user = meta.get("users", {}).get(user_id)
     if not user:
@@ -425,7 +496,8 @@ def set_user_credits(user_id: str, payload: SetCreditsRequest) -> dict:
 
 
 @app.get("/api/admin/credit-records")
-def list_credit_records(userId: str | None = None) -> dict:
+def list_credit_records(userId: str | None = None, authorization: str | None = Header(default=None)) -> dict:
+    require_admin(authorization)
     meta = load_meta()
     records = meta.get("creditRecords", [])
     if userId:
@@ -457,15 +529,44 @@ def get_my_credit_records(x_api_key: str | None = Header(default=None, alias="X-
 
 
 @app.post("/avatar")
-async def create_avatar(file: UploadFile = File(...)) -> Response:
+async def create_avatar(
+    file: UploadFile = File(...),
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
+) -> Response:
+    """同步抠图接口：必须携带用户 API Key，每张成功扣1积分，失败自动退款。"""
+    user = find_user_by_key(x_api_key)
     if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Only image uploads are supported.")
+        raise HTTPException(status_code=400, detail="Only image uploads are supported")
+    if int(user.get("credits", 0)) < 1:
+        raise HTTPException(status_code=402, detail="Insufficient credits")
 
-    image_bytes = await file.read()
+    meta = load_meta()
+    user = meta["users"][user["id"]]
+    user["credits"] = int(user.get("credits", 0)) - 1
+    user["updatedAt"] = utc_now()
+    add_credit_record(meta, user["id"], -1, user["credits"], "avatar_cutout_prep")
+    save_meta(meta)
+
     try:
+        image_bytes = await file.read()
         output = process_with_padding(image_bytes, get_processor())
     except Exception as exc:
+        meta = load_meta()
+        user = meta["users"].get(user["id"])
+        if user:
+            user["credits"] = int(user.get("credits", 0)) + 1
+            user["updatedAt"] = utc_now()
+            add_credit_record(meta, user["id"], 1, user["credits"], "avatar_cutout_refund")
+            save_meta(meta)
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    meta = load_meta()
+    user = meta["users"].get(user["id"])
+    if user:
+        existing = next((r for r in meta.get("creditRecords", []) if r.get("reason") == "avatar_cutout_prep" and r.get("userId") == user["id"] and r.get("amount") == -1), None)
+        if existing:
+            existing["reason"] = "avatar_cutout_cost"
+            save_meta(meta)
 
     return Response(content=output, media_type="image/png")
 
@@ -477,7 +578,7 @@ def create_upload_session(payload: UploadSessionRequest) -> dict:
     sessions = meta.setdefault("sessions", {})
 
     for upload_id, session in sessions.items():
-        if session.get("fingerprint") == payload.fingerprint and session.get("status") != "completed":
+        if session.get("fingerprint") == payload.fingerprint and session.get("status") != "completed" and (CHUNKS_DIR / upload_id).exists():
             session["updatedAt"] = utc_now()
             save_meta(meta)
             return {"uploadId": upload_id, "uploadedChunks": get_uploaded_chunks(upload_id)}
@@ -597,14 +698,14 @@ async def submit_task(
         "fileName": filename,
         "fileType": file.content_type,
         "headCount": head_count,
-        "creditCost": head_count,
+        "creditCost": 1,
         "sourcePath": str(source_path),
         "createdAt": utc_now(),
         "updatedAt": utc_now(),
     }
     meta = load_meta()
     meta.setdefault("tasks", {})[task_id] = task
-    user = deduct_credit_for_task(meta, user["id"], task_id, head_count)
+    user = deduct_credit_for_task(meta, user["id"], task_id)
     save_meta(meta)
     background_tasks.add_task(run_image_task, task_id)
     return {
@@ -612,7 +713,7 @@ async def submit_task(
         "statusUrl": f"/api/tasks/{task_id}",
         "imageUrl": f"/api/tasks/{task_id}/image",
         "headCount": head_count,
-        "creditCost": head_count,
+        "creditCost": 1,
         "credits": user["credits"],
     }
 
@@ -705,3 +806,9 @@ def delete_file(file_id: str) -> dict:
     meta["files"] = remaining
     save_meta(meta)
     return {"ok": True}
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run("api:app", host="127.0.0.1", port=7333)

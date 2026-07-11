@@ -1,4 +1,4 @@
-export type UploadStatus = "ready" | "uploading" | "done" | "error";
+export type UploadStatus = "ready" | "uploading" | "done" | "cutting" | "cutout" | "error";
 
 export type ManagedFile = {
   id: string;
@@ -9,6 +9,8 @@ export type ManagedFile = {
   progress: number;
   status: UploadStatus;
   serverId?: string;
+  cutoutUrl?: string;
+  taskId?: string;
   error?: string;
 };
 

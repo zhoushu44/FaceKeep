@@ -1,6 +1,41 @@
 import type { CreditRecord, ServerFile, UserAccount } from "@/types";
 
 const API_BASE = "";
+export const USER_SESSION_KEY = "facekeep_user_api_key";
+export const ADMIN_SESSION_KEY = "facekeep_admin_token";
+
+async function adminFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const token = localStorage.getItem(ADMIN_SESSION_KEY) || "";
+  const headers = new Headers(init.headers);
+  headers.set("Authorization", `Bearer ${token}`);
+  const response = await fetch(`${API_BASE}${path}`, { ...init, headers });
+  if (response.status === 401) {
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+    window.location.assign("/admin/login");
+  }
+  return response;
+}
+
+export async function adminLogin(username: string, password: string): Promise<string> {
+  const response = await fetch(`${API_BASE}/api/admin/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+  if (!response.ok) throw new Error("管理员用户名或密码错误");
+  const data = await response.json();
+  return data.token;
+}
+
+export async function verifyAdminSession(): Promise<void> {
+  const response = await adminFetch("/api/admin/session");
+  if (!response.ok) throw new Error("管理员登录状态已失效");
+}
+
+export async function adminLogout(): Promise<void> {
+  await adminFetch("/api/admin/logout", { method: "POST" });
+  localStorage.removeItem(ADMIN_SESSION_KEY);
+}
 
 export async function fetchFiles(): Promise<ServerFile[]> {
   const response = await fetch(`${API_BASE}/api/files`);
@@ -53,20 +88,53 @@ export async function completeUpload(uploadId: string): Promise<ServerFile> {
   return data.file;
 }
 
+export type ImageTask = {
+  taskId: string;
+  status: "queued" | "processing" | "completed" | "failed";
+  progress: number;
+  imageUrl?: string;
+  error?: string;
+};
+
+export async function submitImageTask(file: File, apiKey: string): Promise<{ taskId: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  const response = await fetch(`${API_BASE}/api/tasks/submit`, {
+    method: "POST",
+    headers: { "X-API-Key": apiKey },
+    body: form,
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.detail || "任务提交失败");
+  return data;
+}
+
+export async function fetchImageTask(taskId: string): Promise<ImageTask> {
+  const response = await fetch(`${API_BASE}/api/tasks/${taskId}`);
+  if (!response.ok) throw new Error("任务状态获取失败");
+  return response.json();
+}
+
+export async function fetchTaskImage(taskId: string): Promise<Blob> {
+  const response = await fetch(`${API_BASE}/api/tasks/${taskId}/image`);
+  if (!response.ok) throw new Error("结果图片加载失败");
+  return response.blob();
+}
+
 export async function deleteServerFile(id: string): Promise<void> {
   const response = await fetch(`${API_BASE}/api/files/${id}`, { method: "DELETE" });
   if (!response.ok) throw new Error("删除失败");
 }
 
 export async function fetchUsers(): Promise<UserAccount[]> {
-  const response = await fetch(`${API_BASE}/api/admin/users`);
+  const response = await adminFetch("/api/admin/users");
   if (!response.ok) throw new Error("用户列表加载失败");
   const data = await response.json();
   return data.users;
 }
 
 export async function createUser(payload: { username: string; name: string; password: string; credits: number }): Promise<UserAccount> {
-  const response = await fetch(`${API_BASE}/api/admin/users`, {
+  const response = await adminFetch("/api/admin/users", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -77,7 +145,7 @@ export async function createUser(payload: { username: string; name: string; pass
 }
 
 export async function updateUser(id: string, payload: { username?: string; name?: string; apiKey?: string; password?: string }): Promise<UserAccount> {
-  const response = await fetch(`${API_BASE}/api/admin/users/${id}`, {
+  const response = await adminFetch(`/api/admin/users/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -88,7 +156,7 @@ export async function updateUser(id: string, payload: { username?: string; name?
 }
 
 export async function adjustCredits(id: string, amount: number, reason: string): Promise<UserAccount> {
-  const response = await fetch(`${API_BASE}/api/admin/users/${id}/credits/adjust`, {
+  const response = await adminFetch(`/api/admin/users/${id}/credits/adjust`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ amount, reason }),
@@ -99,7 +167,7 @@ export async function adjustCredits(id: string, amount: number, reason: string):
 }
 
 export async function setCredits(id: string, credits: number, reason: string): Promise<UserAccount> {
-  const response = await fetch(`${API_BASE}/api/admin/users/${id}/credits/set`, {
+  const response = await adminFetch(`/api/admin/users/${id}/credits/set`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ credits, reason }),
@@ -111,7 +179,7 @@ export async function setCredits(id: string, credits: number, reason: string): P
 
 export async function fetchCreditRecords(userId?: string): Promise<CreditRecord[]> {
   const query = userId ? `?userId=${encodeURIComponent(userId)}` : "";
-  const response = await fetch(`${API_BASE}/api/admin/credit-records${query}`);
+  const response = await adminFetch(`/api/admin/credit-records${query}`);
   if (!response.ok) throw new Error("积分记录加载失败");
   const data = await response.json();
   return data.records;

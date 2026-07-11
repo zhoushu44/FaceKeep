@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { FileQueue } from "@/components/FileQueue";
 import { PreviewPanel } from "@/components/PreviewPanel";
 import { UploadPanel } from "@/components/UploadPanel";
-import { completeUpload, createSession, fetchFiles, uploadChunk } from "@/lib/api";
+import { ADMIN_SESSION_KEY, USER_SESSION_KEY, completeUpload, createSession, fetchFiles, fetchImageTask, fetchTaskImage, submitImageTask, uploadChunk } from "@/lib/api";
 import { CHUNK_SIZE, formatBytes } from "@/lib/fileUtils";
 import { useFileStore } from "@/hooks/useFileStore";
 
@@ -51,24 +51,69 @@ export default function Home() {
     }
   };
 
-  const startUpload = async () => {
-    const targets = useFileStore.getState().queue.filter((item) => item.status === "ready" || item.status === "error");
+  const runConcurrent = async (ids: string[], worker: (id: string) => Promise<void>) => {
     let cursor = 0;
-    const workerCount = Math.min(useFileStore.getState().concurrency, targets.length);
-
+    const workerCount = Math.min(useFileStore.getState().concurrency, ids.length);
     const runWorker = async () => {
-      while (cursor < targets.length) {
-        const item = targets[cursor];
+      while (cursor < ids.length) {
+        const id = ids[cursor];
         cursor += 1;
-        await uploadOne(item.id);
+        await worker(id);
       }
     };
-
     await Promise.all(Array.from({ length: workerCount }, runWorker));
   };
 
+  const startUpload = async () => {
+    const targets = useFileStore.getState().queue.filter((item) => item.status === "ready" || item.status === "error");
+    await runConcurrent(targets.map((item) => item.id), uploadOne);
+  };
+
+  const cutoutOne = async (itemId: string) => {
+    const item = useFileStore.getState().queue.find((entry) => entry.id === itemId);
+    if (!item) return;
+    updateFile(item.id, { status: "cutting", progress: 10, error: undefined });
+    try {
+      const apiKey = localStorage.getItem(USER_SESSION_KEY);
+      if (!apiKey) {
+        updateFile(item.id, { status: "error", progress: 0, error: "请先登录用户账号再抠图" });
+        return;
+      }
+      const submitted = await submitImageTask(item.file, apiKey);
+      let task = await fetchImageTask(submitted.taskId);
+      while (task.status === "queued" || task.status === "processing") {
+        updateFile(item.id, { progress: task.progress });
+        await new Promise((resolve) => window.setTimeout(resolve, 1000));
+        task = await fetchImageTask(submitted.taskId);
+      }
+      if (task.status === "failed") throw new Error(task.error || "抠图失败，积分已退回");
+      const output = await fetchTaskImage(submitted.taskId);
+      const previousUrl = useFileStore.getState().queue.find((entry) => entry.id === item.id)?.cutoutUrl;
+      if (previousUrl?.startsWith("blob:")) URL.revokeObjectURL(previousUrl);
+      updateFile(item.id, { status: "cutout", progress: 100, cutoutUrl: URL.createObjectURL(output), taskId: submitted.taskId });
+    } catch (error) {
+      updateFile(item.id, { status: "error", progress: 0, error: error instanceof Error ? error.message : "抠图失败" });
+    }
+  };
+
+  const startCutout = async () => {
+    const targets = useFileStore.getState().queue.filter((item) => item.status === "done" || (item.status === "error" && item.serverId));
+    await runConcurrent(targets.map((item) => item.id), cutoutOne);
+  };
+
   const uploadedSize = serverFiles.reduce((sum, item) => sum + item.fileSize, 0);
-  const done = queue.filter((item) => item.status === "done").length + serverFiles.length;
+  const done = queue.filter((item) => item.status === "cutout").length;
+  const cutting = queue.filter((item) => item.status === "cutting").length;
+  const cutoutProgress = queue.length ? Math.round(queue.reduce((sum, item) => sum + (item.status === "cutout" ? 100 : item.status === "cutting" ? item.progress : 0), 0) / queue.length) : 0;
+  const isAdmin = Boolean(localStorage.getItem(ADMIN_SESSION_KEY));
+  const isUser = !isAdmin && Boolean(localStorage.getItem(USER_SESSION_KEY));
+  const logout = () => {
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+    localStorage.removeItem(USER_SESSION_KEY);
+    window.location.reload();
+  };
+
+  // 首页对所有人可见，未登录时显示入口引导
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#08111f] text-slate-100">
@@ -80,28 +125,25 @@ export default function Home() {
               <div className="mb-3 inline-flex rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs font-medium text-cyan-200">
                 FaceKeep 文件管理中枢
               </div>
-              <h1 className="max-w-3xl text-3xl font-black tracking-tight text-white md:text-5xl">上传、预览、续传与 JPG 标准输出，一屏完成。</h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">支持单张图片、多张批量、文件夹整体上传；断点续传实时进度；导出 JPG 宽 1500 像素，高度自适应，96 DPI。</p>
+              <h1 className="max-w-3xl text-3xl font-black tracking-tight text-white md:text-5xl">上传、预览、续传与 PNG 标准输出，一屏完成。</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">支持单张图片、多张批量、文件夹整体上传；断点续传实时进度；导出 PNG 宽 1500 像素，高度自适应，96 DPI。</p>
               <div className="mt-4 flex flex-wrap gap-3">
-                <Link className="inline-flex rounded-full border border-amber-300/30 bg-amber-300/10 px-4 py-2 text-sm font-bold text-amber-100 hover:bg-amber-300/20" to="/admin">
-                  进入用户与积分管理
-                </Link>
-                <Link className="inline-flex rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm font-bold text-cyan-100 hover:bg-cyan-300/20" to="/login">
-                  用户登录
-                </Link>
+                {!isAdmin && !isUser && <><Link className="inline-flex rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm font-bold text-cyan-100" to="/login">用户登录</Link><Link className="inline-flex rounded-full border border-amber-300/30 bg-amber-300/10 px-4 py-2 text-sm font-bold text-amber-100" to="/admin/login">管理员登录</Link></>}
+                {isUser && <><Link className="inline-flex rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm font-bold text-cyan-100" to="/user">积分中心</Link><button className="inline-flex rounded-full border border-white/20 px-4 py-2 text-sm font-bold" onClick={logout}>退出</button></>}
+                {isAdmin && <><Link className="inline-flex rounded-full border border-amber-300/30 bg-amber-300/10 px-4 py-2 text-sm font-bold text-amber-100" to="/admin">管理后台</Link><button className="inline-flex rounded-full border border-white/20 px-4 py-2 text-sm font-bold" onClick={logout}>退出</button></>}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:min-w-[520px]">
               <Metric icon={<ImageUp />} label="总文件" value={String(queue.length + serverFiles.length)} />
-              <Metric icon={<Gauge />} label="并发数" value={`${concurrency} 路`} />
-              <Metric icon={<ShieldCheck />} label="已完成" value={String(done)} />
+              <Metric icon={<Gauge />} label="抠图进度" value={`${cutoutProgress}%${cutting ? ` · ${cutting} 处理中` : ""}`} />
+              <Metric icon={<ShieldCheck />} label="抠图完成" value={String(done)} />
               <Metric icon={<HardDrive />} label="存储" value={formatBytes(uploadedSize)} />
             </div>
           </div>
         </header>
 
         <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)_380px]">
-          <UploadPanel onStartUpload={startUpload} />
+          <UploadPanel onStartUpload={startUpload} onStartCutout={startCutout} />
           <FileQueue />
           <PreviewPanel />
         </div>

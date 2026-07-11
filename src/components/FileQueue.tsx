@@ -28,13 +28,25 @@ export function FileQueue() {
             className={`w-full rounded-2xl border p-3 text-left transition hover:border-cyan-300/60 ${selectedId === item.id ? "border-cyan-300/70 bg-cyan-300/10" : "border-slate-700 bg-slate-900/70"}`}
           >
             <div className="flex gap-3">
-              <img src={item.previewUrl} className="h-14 w-14 rounded-xl object-cover" />
+              <div className="flex shrink-0 gap-2">
+                <div>
+                  <img src={item.previewUrl} alt="原图缩略图" className="h-16 w-16 rounded-xl object-cover" />
+                  <div className="mt-1 text-center text-[10px] text-slate-500">原图</div>
+                </div>
+                {item.cutoutUrl && (
+                  <div>
+                    <img src={item.cutoutUrl} alt="抠图缩略图" className="h-16 w-16 rounded-xl bg-[linear-gradient(45deg,#1e293b_25%,transparent_25%),linear-gradient(-45deg,#1e293b_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#1e293b_75%),linear-gradient(-45deg,transparent_75%,#1e293b_75%)] bg-[length:12px_12px] object-contain" />
+                    <div className="mt-1 text-center text-[10px] text-violet-300">抠图结果</div>
+                  </div>
+                )}
+              </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium text-white">{item.relativePath || item.file.name}</div>
                 <div className="mt-1 text-xs text-slate-500">{formatBytes(item.file.size)}</div>
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800">
                   <div className="h-full rounded-full bg-cyan-300 transition-all" style={{ width: `${item.progress}%` }} />
                 </div>
+                <div className="mt-1 text-[10px] text-slate-500">{item.status === "cutting" ? `抠图处理中 ${item.progress}%` : item.status === "cutout" ? "抠图完成" : `上传进度 ${item.progress}%`}</div>
               </div>
               <StatusPill status={item.status} />
             </div>

@@ -1,6 +1,110 @@
 {
-  "sessions": {},
-  "files": [],
+  "sessions": {
+    "8c0467be77e74071b7dec1217a556a39": {
+      "uploadId": "8c0467be77e74071b7dec1217a556a39",
+      "fingerprint": "微信图片_20260331155049_218_5244.png-4009121-1775006241290",
+      "fileName": "微信图片_20260331155049_218_5244.png",
+      "fileSize": 4009121,
+      "fileType": "image/png",
+      "relativePath": null,
+      "totalChunks": 8,
+      "status": "uploading",
+      "createdAt": "2026-07-11T01:06:28.387120+00:00",
+      "updatedAt": "2026-07-11T01:06:28.943761+00:00"
+    },
+    "7979100b8f67490e88bcb951191a3c0b": {
+      "uploadId": "7979100b8f67490e88bcb951191a3c0b",
+      "fingerprint": "微信图片_20260331155229_219_5244.png-4275854-1775006244401",
+      "fileName": "微信图片_20260331155229_219_5244.png",
+      "fileSize": 4275854,
+      "fileType": "image/png",
+      "relativePath": null,
+      "totalChunks": 9,
+      "status": "completed",
+      "createdAt": "2026-07-11T01:06:28.558776+00:00",
+      "updatedAt": "2026-07-11T01:06:29.206926+00:00"
+    },
+    "de86e3544f644686b73bd1a4e341ee1f": {
+      "uploadId": "de86e3544f644686b73bd1a4e341ee1f",
+      "fingerprint": "微信图片_20260331155230_220_5244.png-4585645-1775006246786",
+      "fileName": "微信图片_20260331155230_220_5244.png",
+      "fileSize": 4585645,
+      "fileType": "image/png",
+      "relativePath": null,
+      "totalChunks": 9,
+      "status": "completed",
+      "createdAt": "2026-07-11T01:06:29.113312+00:00",
+      "updatedAt": "2026-07-11T01:06:29.723943+00:00"
+    },
+    "548acd9cd1194bb19ae323245193cb36": {
+      "uploadId": "548acd9cd1194bb19ae323245193cb36",
+      "fingerprint": "微信图片_20260331160240_221_5244.png-4803924-1775006253990",
+      "fileName": "微信图片_20260331160240_221_5244.png",
+      "fileSize": 4803924,
+      "fileType": "image/png",
+      "relativePath": null,
+      "totalChunks": 10,
+      "status": "completed",
+      "createdAt": "2026-07-11T01:06:29.327389+00:00",
+      "updatedAt": "2026-07-11T01:06:29.920993+00:00"
+    },
+    "91ebe2acc25946d6986de9d00315e9fe": {
+      "uploadId": "91ebe2acc25946d6986de9d00315e9fe",
+      "fingerprint": "ScreenShot_2026-03-31_155955_563.png-60847-1774943997229",
+      "fileName": "ScreenShot_2026-03-31_155955_563.png",
+      "fileSize": 60847,
+      "fileType": "image/png",
+      "relativePath": null,
+      "totalChunks": 1,
+      "status": "uploading",
+      "createdAt": "2026-07-11T01:06:29.798093+00:00",
+      "updatedAt": "2026-07-11T01:06:29.873175+00:00"
+    },
+    "3caa2e2839f941c2bb2ea65a68e6cc1c": {
+      "uploadId": "3caa2e2839f941c2bb2ea65a68e6cc1c",
+      "fingerprint": "6ecf524ae6bab9a18d99429c50a41230633d6fce4f6edf1cb4ee14de444eb8a3",
+      "fileName": "13543920632973.jpeg",
+      "fileSize": 849774,
+      "fileType": "image/jpeg",
+      "relativePath": null,
+      "totalChunks": 4,
+      "status": "completed",
+      "createdAt": "2026-07-11T01:45:00.854022+00:00",
+      "updatedAt": "2026-07-11T01:45:01.780170+00:00"
+    },
+    "71ac391092824a7985eb2968a0b02032": {
+      "uploadId": "71ac391092824a7985eb2968a0b02032",
+      "fingerprint": "13543920632973.jpeg-849774-1783146209965",
+      "fileName": "13543920632973.jpeg",
+      "fileSize": 849774,
+      "fileType": "image/jpeg",
+      "relativePath": null,
+      "totalChunks": 2,
+      "status": "completed",
+      "createdAt": "2026-07-11T02:28:08.530480+00:00",
+      "updatedAt": "2026-07-11T02:30:57.779614+00:00"
+    }
+  },
+  "files": [
+    {
+      "id": "24bf768ef8fc4869bdc0edb32b147098",
+      "fileName": "13543920632973.jpeg",
+      "fileSize": 849774,
+      "fileType": "image/jpeg",
+      "relativePath": null,
+      "path": "E:\\360MoveData\\Users\\Administrator\\Desktop\\FaceKeep\\uploads\\files\\24bf768ef8fc4869bdc0edb32b147098_13543920632973.jpeg",
+      "createdAt": "2026-07-11T02:30:57.779614+00:00"
+    },
+    {
+      "id": "46cf9a3fc5724a16957c6227998ce90b",
+      "fileName": "13543920632973.jpeg",
+      "fileSize": 849774,
+      "fileType": "image/jpeg",
+      "relativePath": null,
+      "path": "E:\\360MoveData\\Users\\Administrator\\Desktop\\FaceKeep\\uploads\\files\\46cf9a3fc5724a16957c6227998ce90b_13543920632973.jpeg",
+      "createdAt": "2026-07-11T01:45:01.780170+00:00"
+    }
+  ],
   "tasks": {
     "ab87ca1aebc44862851031ab54240a97": {
       "taskId": "ab87ca1aebc44862851031ab54240a97",
@@ -5599,6 +5703,69 @@
       "sourcePath": "E:\\360MoveData\\Users\\Administrator\\Desktop\\FaceKeep\\uploads\\tasks\\867a84e7c44f441facfc7cb612cf3b77_20222635914846.jpeg",
       "createdAt": "2026-07-06T10:21:12.473022+00:00",
       "updatedAt": "2026-07-06T10:21:12.473022+00:00"
+    },
+    "00147f3adf224bc9bfe1ae17ba181a62": {
+      "taskId": "00147f3adf224bc9bfe1ae17ba181a62",
+      "userId": "d6dee2ca62b64bd7801cfa999dd2ef4c",
+      "status": "failed",
+      "progress": 100,
+      "fileName": "13543920632973.jpeg",
+      "fileType": "image/jpeg",
+      "headCount": 3,
+      "creditCost": 3,
+      "sourcePath": "E:\\360MoveData\\Users\\Administrator\\Desktop\\FaceKeep\\uploads\\tasks\\00147f3adf224bc9bfe1ae17ba181a62_13543920632973.jpeg",
+      "createdAt": "2026-07-11T01:46:47.632471+00:00",
+      "updatedAt": "2026-07-11T01:46:53.557876+00:00",
+      "error": "HTTPSConnectionPool(host='token.86969678.xyz', port=443): Max retries exceeded with url: /v1/images/edits (Caused by SSLError(SSLEOFError(8, 'EOF occurred in violation of protocol (_ssl.c:1007)')))"
+    },
+    "33e8e3e8d4bc4c919db16b101114cd31": {
+      "taskId": "33e8e3e8d4bc4c919db16b101114cd31",
+      "userId": "d6dee2ca62b64bd7801cfa999dd2ef4c",
+      "status": "completed",
+      "progress": 100,
+      "fileName": "13543920632973.jpeg",
+      "fileType": "image/jpeg",
+      "headCount": 3,
+      "creditCost": 3,
+      "sourcePath": "E:\\360MoveData\\Users\\Administrator\\Desktop\\FaceKeep\\uploads\\tasks\\33e8e3e8d4bc4c919db16b101114cd31_13543920632973.jpeg",
+      "createdAt": "2026-07-11T01:57:53.023006+00:00",
+      "updatedAt": "2026-07-11T01:59:10.507570+00:00",
+      "outputPath": "E:\\360MoveData\\Users\\Administrator\\Desktop\\FaceKeep\\uploads\\tasks\\33e8e3e8d4bc4c919db16b101114cd31_1500w_96dpi.png",
+      "outputWidth": 1500,
+      "outputHeight": 1939,
+      "imageUrl": "/api/tasks/33e8e3e8d4bc4c919db16b101114cd31/image"
+    },
+    "964f933c744448d5ab2612117bd64587": {
+      "taskId": "964f933c744448d5ab2612117bd64587",
+      "userId": "ab35cee328de4d4d8549eab9f1e71749",
+      "status": "completed",
+      "progress": 100,
+      "fileName": "13543920632973.jpeg",
+      "fileType": "image/jpeg",
+      "headCount": 3,
+      "creditCost": 1,
+      "sourcePath": "E:\\360MoveData\\Users\\Administrator\\Desktop\\FaceKeep\\uploads\\tasks\\964f933c744448d5ab2612117bd64587_13543920632973.jpeg",
+      "createdAt": "2026-07-11T02:31:45.918795+00:00",
+      "updatedAt": "2026-07-11T02:33:11.132937+00:00",
+      "outputPath": "E:\\360MoveData\\Users\\Administrator\\Desktop\\FaceKeep\\uploads\\tasks\\964f933c744448d5ab2612117bd64587_1500w_96dpi.png",
+      "outputWidth": 1500,
+      "outputHeight": 1500,
+      "imageUrl": "/api/tasks/964f933c744448d5ab2612117bd64587/image"
+    },
+    "315464836a85445aa7a5de170ec4eb8f": {
+      "taskId": "315464836a85445aa7a5de170ec4eb8f",
+      "userId": "ab35cee328de4d4d8549eab9f1e71749",
+      "status": "failed",
+      "progress": 100,
+      "fileName": "invalid.png",
+      "fileType": "image/png",
+      "headCount": 1,
+      "creditCost": 1,
+      "sourcePath": "E:\\360MoveData\\Users\\Administrator\\Desktop\\FaceKeep\\uploads\\tasks\\315464836a85445aa7a5de170ec4eb8f_invalid.png",
+      "createdAt": "2026-07-11T02:35:52.752819+00:00",
+      "updatedAt": "2026-07-11T02:35:52.853376+00:00",
+      "error": "cannot identify image file <_io.BytesIO object at 0x000000001D8846D0>",
+      "creditRefunded": true
     }
   },
   "users": {
@@ -5608,7 +5775,7 @@
       "apiKey": "fk_test_e927be2c",
       "credits": 1,
       "createdAt": "2026-07-06T08:10:23.031781+00:00",
-      "updatedAt": "2026-07-06T08:10:23.140148+00:00"
+      "updatedAt": "2026-07-11T01:10:01.168058+00:00"
     },
     "39d0409197ae402b8fca1c4b911d383c": {
       "id": "39d0409197ae402b8fca1c4b911d383c",
@@ -5672,9 +5839,121 @@
       "credits": 967,
       "createdAt": "2026-07-06T10:05:20.208710+00:00",
       "updatedAt": "2026-07-06T10:21:12.476022+00:00"
+    },
+    "d6dee2ca62b64bd7801cfa999dd2ef4c": {
+      "id": "d6dee2ca62b64bd7801cfa999dd2ef4c",
+      "username": "e2e_20260711094500",
+      "name": "E2E验收_20260711094500",
+      "apiKey": "fk_15643eaab6c1434e942c74d10e5558a85cf86c68",
+      "passwordSalt": "d43f6f030e0c41fcb84f2b5c3c3ed0e3",
+      "passwordHash": "0f9a99534c1a1eec4d0af92a94b33397e67208e66832de98caa5a3a313aa5a23",
+      "credits": 4,
+      "createdAt": "2026-07-11T01:45:00.376558+00:00",
+      "updatedAt": "2026-07-11T01:57:53.039008+00:00"
+    },
+    "ab35cee328de4d4d8549eab9f1e71749": {
+      "id": "ab35cee328de4d4d8549eab9f1e71749",
+      "username": "e2e_20260711113000",
+      "name": "E2E验收_20260711113000",
+      "apiKey": "fk_1bc838812041492bb7971a3467cea2b2b512f9f4",
+      "passwordSalt": "74f17f065e9c421687e82a6b2001445e",
+      "passwordHash": "6231ef2bb637d4e7f13e5786f35b20dfa0c9513adcdf854d2da5cead6b7f6c95",
+      "credits": 4,
+      "createdAt": "2026-07-11T02:21:52.987541+00:00",
+      "updatedAt": "2026-07-11T02:35:52.853376+00:00"
     }
   },
   "creditRecords": [
+    {
+      "id": "c7177bf2f0c24e90a4df1804589bd297",
+      "userId": "ab35cee328de4d4d8549eab9f1e71749",
+      "amount": 1,
+      "balance": 4,
+      "reason": "failed_task_refund",
+      "taskId": "315464836a85445aa7a5de170ec4eb8f",
+      "createdAt": "2026-07-11T02:35:52.853376+00:00"
+    },
+    {
+      "id": "7e401c789c8e42eb90fda05782cb5a10",
+      "userId": "ab35cee328de4d4d8549eab9f1e71749",
+      "amount": -1,
+      "balance": 3,
+      "reason": "task_image_cost",
+      "taskId": "315464836a85445aa7a5de170ec4eb8f",
+      "createdAt": "2026-07-11T02:35:52.756818+00:00"
+    },
+    {
+      "id": "98619c24f2194a0e9a9a0823f634fbd9",
+      "userId": "ab35cee328de4d4d8549eab9f1e71749",
+      "amount": -1,
+      "balance": 4,
+      "reason": "task_image_cost",
+      "taskId": "964f933c744448d5ab2612117bd64587",
+      "createdAt": "2026-07-11T02:31:45.923799+00:00"
+    },
+    {
+      "id": "4d806a3faef74e90b5628bed3562bf4d",
+      "userId": "ab35cee328de4d4d8549eab9f1e71749",
+      "amount": 5,
+      "balance": 5,
+      "reason": "initial_credits",
+      "taskId": null,
+      "createdAt": "2026-07-11T02:21:52.988537+00:00"
+    },
+    {
+      "id": "ac893692228d436c8d4d45bb362b3bf5",
+      "userId": "d6dee2ca62b64bd7801cfa999dd2ef4c",
+      "amount": -3,
+      "balance": 4,
+      "reason": "task_image_cost",
+      "taskId": "33e8e3e8d4bc4c919db16b101114cd31",
+      "createdAt": "2026-07-11T01:57:53.039008+00:00"
+    },
+    {
+      "id": "366c2eab589c48838cb9b196104cbd17",
+      "userId": "d6dee2ca62b64bd7801cfa999dd2ef4c",
+      "amount": -3,
+      "balance": 7,
+      "reason": "task_image_cost",
+      "taskId": "00147f3adf224bc9bfe1ae17ba181a62",
+      "createdAt": "2026-07-11T01:46:47.635471+00:00"
+    },
+    {
+      "id": "642ed73055ff4d08b6732d64b25c1daa",
+      "userId": "d6dee2ca62b64bd7801cfa999dd2ef4c",
+      "amount": 8,
+      "balance": 10,
+      "reason": "e2e_acceptance_topup",
+      "taskId": null,
+      "createdAt": "2026-07-11T01:45:00.407312+00:00"
+    },
+    {
+      "id": "6004219ae5e3450d8245570f403e3bad",
+      "userId": "d6dee2ca62b64bd7801cfa999dd2ef4c",
+      "amount": 2,
+      "balance": 2,
+      "reason": "initial_credits",
+      "taskId": null,
+      "createdAt": "2026-07-11T01:45:00.376558+00:00"
+    },
+    {
+      "id": "fe19a07259c54349a1ef191ce6e9f0d8",
+      "userId": "1cb5aa9c2b97402a959bacfe1c93810f",
+      "amount": 1,
+      "balance": 1,
+      "reason": "admin_add",
+      "taskId": null,
+      "createdAt": "2026-07-11T01:10:01.168058+00:00"
+    },
+    {
+      "id": "7ef96dee5b0e4297b683020b80034270",
+      "userId": "1cb5aa9c2b97402a959bacfe1c93810f",
+      "amount": -1,
+      "balance": 0,
+      "reason": "admin_subtract",
+      "taskId": null,
+      "createdAt": "2026-07-11T01:09:59.036733+00:00"
+    },
     {
       "id": "d5cd5ee51dbf41f6947ce31e7aeab1ad",
       "userId": "76535e45b52b4a819b8fd77326e80e14",

@@ -1,17 +1,21 @@
-import { FolderUp, ImagePlus, Images, SlidersHorizontal, UploadCloud } from "lucide-react";
+import { FolderUp, ImagePlus, Images, LogIn, SlidersHorizontal, UploadCloud } from "lucide-react";
 import { useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { collectDroppedFiles, createManagedFile, imageOnly } from "@/lib/fileUtils";
+import { USER_SESSION_KEY } from "@/lib/api";
 import { useFileStore } from "@/hooks/useFileStore";
 
 type Props = {
   onStartUpload: () => void;
+  onStartCutout: () => void;
 };
 
-export function UploadPanel({ onStartUpload }: Props) {
+export function UploadPanel({ onStartUpload, onStartCutout }: Props) {
   const addFiles = useFileStore((state) => state.addFiles);
   const queue = useFileStore((state) => state.queue);
   const concurrency = useFileStore((state) => state.concurrency);
   const setConcurrency = useFileStore((state) => state.setConcurrency);
+  const isLoggedIn = Boolean(localStorage.getItem(USER_SESSION_KEY));
   const singleRef = useRef<HTMLInputElement>(null);
   const multiRef = useRef<HTMLInputElement>(null);
   const folderRef = useRef<HTMLInputElement>(null);
@@ -62,12 +66,12 @@ export function UploadPanel({ onStartUpload }: Props) {
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-white">
             <SlidersHorizontal className="h-4 w-4 text-cyan-300" />
-            上传并发
+            抠图并发
           </div>
           <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-2.5 py-1 text-xs font-bold text-cyan-200">{concurrency} 路</span>
         </div>
         <input
-          aria-label="上传并发数"
+          aria-label="抠图并发数"
           className="w-full accent-cyan-300"
           type="range"
           min="1"
@@ -81,15 +85,33 @@ export function UploadPanel({ onStartUpload }: Props) {
           <span>最高 8</span>
         </div>
       </div>
-      <button
-        className="mt-4 w-full rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:-translate-y-0.5 hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-40"
-        disabled={!queue.some((item) => item.status === "ready" || item.status === "error")}
-        onClick={onStartUpload}
-      >
-        开始上传 / 断点续传
-      </button>
+      <div className="mt-4 grid gap-3">
+        <button
+          className="w-full rounded-2xl border border-cyan-300/40 bg-cyan-300/10 px-4 py-3 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={!queue.some((item) => item.status === "ready" || (item.status === "error" && !item.serverId))}
+          onClick={onStartUpload}
+        >
+          上传原图 / 断点续传
+        </button>
+        {isLoggedIn ? (
+          <button
+            className="w-full rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:-translate-y-0.5 hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={!queue.some((item) => item.status === "done" || (item.status === "error" && item.serverId))}
+            onClick={onStartCutout}
+          >
+            开始抠图 · 张消耗1积分
+          </button>
+        ) : (
+          <Link
+            className="w-full rounded-2xl bg-amber-300 px-4 py-3 text-center text-sm font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition hover:-translate-y-0.5 hover:bg-amber-200"
+            to="/login"
+          >
+            <LogIn className="mr-1 inline h-4 w-4" /> 登录后抠图 · 每张1积分
+          </Link>
+        )}
+      </div>
       <div className="mt-4 rounded-2xl border border-slate-700/70 bg-slate-900/60 p-4 text-xs leading-5 text-slate-400">
-        输出标准：JPG，宽度 1500 像素，高度按比例自适应，96 DPI。
+        输出标准：PNG，宽度 1500 像素，高度按比例自适应，96 DPI。
       </div>
     </section>
   );

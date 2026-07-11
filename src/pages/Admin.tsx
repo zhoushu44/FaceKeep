@@ -1,10 +1,11 @@
-import { ArrowLeft, Clipboard, Coins, KeyRound, Plus, RefreshCw, Save, UserRound } from "lucide-react";
+import { ArrowLeft, Clipboard, Coins, KeyRound, LogOut, Plus, RefreshCw, Save, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { adjustCredits, createUser, fetchCreditRecords, fetchUsers, setCredits, updateUser } from "@/lib/api";
+import { Link, useNavigate } from "react-router-dom";
+import { ADMIN_SESSION_KEY, adminLogout, adjustCredits, createUser, fetchCreditRecords, fetchUsers, setCredits, updateUser, verifyAdminSession } from "@/lib/api";
 import type { CreditRecord, UserAccount } from "@/types";
 
 export default function Admin() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [records, setRecords] = useState<CreditRecord[]>([]);
   const [selectedId, setSelectedId] = useState<string>();
@@ -27,7 +28,10 @@ export default function Admin() {
   };
 
   useEffect(() => {
-    reload().catch((error) => setMessage(error instanceof Error ? error.message : "加载失败"));
+    verifyAdminSession().then(reload).catch(() => {
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      navigate("/admin/login");
+    });
   }, []);
 
   useEffect(() => {
@@ -89,9 +93,10 @@ export default function Admin() {
             <h1 className="text-3xl font-black text-white">用户与积分管理</h1>
             <p className="mt-2 text-sm text-slate-400">创建用户、设置 API Key、增减积分，并查看每次扣费和调整记录。</p>
           </div>
-          <button className="action-button" onClick={() => reload()}>
-            <RefreshCw className="h-4 w-4" /> 刷新数据
-          </button>
+          <div className="flex gap-3">
+            <button className="action-button" onClick={() => reload()}><RefreshCw className="h-4 w-4" /> 刷新数据</button>
+            <button className="secondary-download" onClick={async () => { await adminLogout(); navigate("/admin/login"); }}><LogOut className="h-4 w-4" /> 退出</button>
+          </div>
         </header>
 
         {message && <div className="mb-5 rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-sm text-cyan-100">{message}</div>}

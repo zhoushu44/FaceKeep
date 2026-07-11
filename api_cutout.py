@@ -120,12 +120,11 @@ def format_output_png(image_bytes: bytes) -> bytes:
     if bbox:
         img = img.crop(bbox)
 
-    width, height = img.size
-    padded = Image.new("RGBA", (width + 2 * OUTPUT_PADDING, height + 2 * OUTPUT_PADDING), (0, 0, 0, 0))
-    padded.paste(img, (OUTPUT_PADDING, OUTPUT_PADDING))
-
-    target_height = max(1, round(padded.height * OUTPUT_WIDTH / padded.width))
-    padded = padded.resize((OUTPUT_WIDTH, target_height), Image.Resampling.LANCZOS)
+    content_width = max(1, OUTPUT_WIDTH - 2 * OUTPUT_PADDING)
+    target_height = max(1, round(img.height * content_width / img.width))
+    img = img.resize((content_width, target_height), Image.Resampling.LANCZOS)
+    padded = Image.new("RGBA", (OUTPUT_WIDTH, target_height + 2 * OUTPUT_PADDING), (0, 0, 0, 0))
+    padded.paste(img, (OUTPUT_PADDING, OUTPUT_PADDING), img)
 
     output = BytesIO()
     padded.save(output, format="PNG", dpi=(OUTPUT_DPI, OUTPUT_DPI))

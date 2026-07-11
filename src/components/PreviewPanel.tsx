@@ -11,7 +11,7 @@ export function PreviewPanel() {
   const remote = serverFiles.find((item) => item.id === selectedId) || serverFiles[0];
 
   const title = local?.relativePath || local?.file.name || remote?.relativePath || remote?.fileName || "等待选择图片";
-  const src = local?.previewUrl || (remote ? apiUrl(remote.url) : "");
+  const src = local?.cutoutUrl || local?.previewUrl || (remote ? apiUrl(remote.url) : "");
   const size = local ? formatBytes(local.file.size) : remote ? formatBytes(remote.fileSize) : "-";
 
   return (
@@ -25,7 +25,7 @@ export function PreviewPanel() {
       </div>
 
       <div className="mt-5 flex aspect-[4/5] items-center justify-center overflow-hidden rounded-[24px] border border-slate-700 bg-[radial-gradient(circle_at_30%_20%,rgba(57,230,210,.16),transparent_32%),#0f172a]">
-        {src ? <img src={src} className="h-full w-full object-contain" /> : <div className="text-sm text-slate-500">上传或选择图片后显示预览</div>}
+        {src ? <img src={src} alt={title} className="h-full w-full object-contain" /> : <div className="text-sm text-slate-500">上传或选择图片后显示预览</div>}
       </div>
 
       <div className="mt-5 grid grid-cols-2 gap-3 text-xs">
@@ -48,7 +48,11 @@ export function PreviewPanel() {
       </div>
 
       <div className="mt-5 grid gap-3">
-        {remote ? (
+        {local?.cutoutUrl ? (
+          <a className="download-button" href={local.cutoutUrl} download={`${local.file.name.replace(/\.[^.]+$/, "")}_1500w_96dpi.png`}>
+            <Download className="h-4 w-4" /> 下载抠图 PNG
+          </a>
+        ) : remote ? (
           <a className="download-button" href={apiUrl(remote.pngUrl)}>
             <Download className="h-4 w-4" /> 下载 PNG 1500 像素宽
           </a>

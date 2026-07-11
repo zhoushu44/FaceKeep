@@ -1,19 +1,19 @@
 # FaceKeep 文件管理与任务 API
 
-FaceKeep 提供网页版文件管理系统，并支持任务模式 API：提交图片任务、查询任务状态、按任务 ID 提取处理后的 JPG 图片。
+FaceKeep 提供网页版文件管理系统，并支持任务模式 API：提交图片任务、查询任务状态、按任务 ID 提取处理后的 PNG 图片。
 
 ## 启动
 
 ```powershell
 pip install -r requirements.txt
 npm install
-python -m uvicorn api:app --host 0.0.0.0 --port 8000
+python -m uvicorn api:app --host 0.0.0.0 --port 7333
 npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
 前端地址：`http://127.0.0.1:5173/`
 
-后端地址：`http://127.0.0.1:8000/`
+后端地址：`http://127.0.0.1:7333/`
 
 ## 管理页面
 
@@ -43,14 +43,14 @@ npm run dev -- --host 0.0.0.0 --port 5173
 
 ## 输出规格
 
-任务模式和 JPG 下载接口输出：
+任务模式和 PNG 下载接口输出：
 
-- 格式：JPG
+- 格式：PNG
 - 宽度：1500 像素
 - 高度：按原图比例自适应
 - DPI：96
 
-任务模式会先调用头像抠图模型生成真实抠图结果，再合成白底 JPG 输出。
+任务模式会先调用头像抠图模型生成真实抠图结果，再合成白底 PNG 输出。
 
 ## 任务模式 API
 
@@ -73,7 +73,7 @@ Content-Type: multipart/form-data
 PowerShell 示例：
 
 ```powershell
-curl.exe -X POST "http://127.0.0.1:8000/api/tasks/submit" -H "X-API-Key: fk_xxx" -F "file=@input.jpg"
+curl.exe -X POST "http://127.0.0.1:7333/api/tasks/submit" -H "X-API-Key: fk_xxx" -F "file=@input.jpg"
 ```
 
 返回示例：
@@ -95,7 +95,7 @@ GET /api/tasks/{task_id}
 PowerShell 示例：
 
 ```powershell
-curl.exe "http://127.0.0.1:8000/api/tasks/6e09b2f4e10d4f2b8a2b5cfe8de99a51"
+curl.exe "http://127.0.0.1:7333/api/tasks/6e09b2f4e10d4f2b8a2b5cfe8de99a51"
 ```
 
 返回示例：
@@ -127,7 +127,7 @@ curl.exe "http://127.0.0.1:8000/api/tasks/6e09b2f4e10d4f2b8a2b5cfe8de99a51"
 
 ### 3. 提取图片
 
-任务完成后，通过 `task_id` 下载处理后的 JPG 图片。
+任务完成后，通过 `task_id` 下载处理后的 PNG 图片。
 
 ```http
 GET /api/tasks/{task_id}/image
@@ -136,7 +136,7 @@ GET /api/tasks/{task_id}/image
 PowerShell 示例：
 
 ```powershell
-curl.exe "http://127.0.0.1:8000/api/tasks/6e09b2f4e10d4f2b8a2b5cfe8de99a51/image" --output output.jpg
+curl.exe "http://127.0.0.1:7333/api/tasks/6e09b2f4e10d4f2b8a2b5cfe8de99a51/image" --output output.jpg
 ```
 
 如果任务未完成，会返回：
@@ -184,7 +184,7 @@ GET /api/files
 GET /api/files/{file_id}
 ```
 
-### 下载 JPG 1500 像素宽 96 DPI 图片
+### 下载 PNG 1500 像素宽 96 DPI 图片
 
 ```http
 GET /api/files/{file_id}/jpg
