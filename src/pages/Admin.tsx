@@ -1,4 +1,4 @@
-import { ArrowLeft, Clipboard, Coins, KeyRound, LogOut, Plus, RefreshCw, Save, UserRound } from "lucide-react";
+import { ArrowLeft, Clipboard, Coins, DatabaseBackup, KeyRound, LogOut, Plus, RefreshCw, Save, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ADMIN_SESSION_KEY, adminLogout, adjustCredits, createUser, fetchCreditRecords, fetchUsers, setCredits, updateUser, verifyAdminSession } from "@/lib/api";
@@ -94,6 +94,8 @@ export default function Admin() {
             <p className="mt-2 text-sm text-slate-400">创建用户、设置 API Key、增减积分，并查看每次扣费和调整记录。</p>
           </div>
           <div className="flex gap-3">
+            <button className="action-button" onClick={() => navigate("/admin/image-api-settings")}><KeyRound className="h-4 w-4" /> 图像 API 设置</button>
+            <button className="action-button" onClick={() => navigate("/admin/backups")}><DatabaseBackup className="h-4 w-4" /> 数据备份</button>
             <button className="action-button" onClick={() => reload()}><RefreshCw className="h-4 w-4" /> 刷新数据</button>
             <button className="secondary-download" onClick={async () => { await adminLogout(); navigate("/admin/login"); }}><LogOut className="h-4 w-4" /> 退出</button>
           </div>

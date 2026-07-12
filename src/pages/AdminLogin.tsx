@@ -1,7 +1,7 @@
 import { ArrowLeft, LogIn } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ADMIN_SESSION_KEY, USER_SESSION_KEY, adminLogin } from "@/lib/api";
+import { ADMIN_SESSION_KEY, USER_SESSION_KEY, adminLogin, fetchAdminBootstrapStatus } from "@/lib/api";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -9,6 +9,11 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [registrationAllowed, setRegistrationAllowed] = useState(false);
+
+  useEffect(() => {
+    fetchAdminBootstrapStatus().then(setRegistrationAllowed).catch(() => setRegistrationAllowed(false));
+  }, []);
 
   const submit = async () => {
     setLoading(true);
@@ -38,6 +43,7 @@ export default function AdminLogin() {
           <label className="admin-label">管理员密码</label>
           <input className="admin-input" type="password" value={password} onChange={(event) => setPassword(event.target.value)} onKeyDown={(event) => event.key === "Enter" && submit()} />
           <button className="download-button mt-5 w-full justify-center" disabled={loading || !username || !password} onClick={submit}><LogIn className="h-4 w-4" /> {loading ? "登录中" : "登录"}</button>
+          {registrationAllowed && <Link className="mt-5 block text-center text-sm text-cyan-200 hover:text-white" to="/admin/register">初始管理员注册</Link>}
         </div>
       </section>
     </main>

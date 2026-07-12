@@ -1,5 +1,6 @@
 """API 模式抠图处理器"""
 import base64
+import json
 import os
 import tempfile
 from io import BytesIO
@@ -9,6 +10,7 @@ import requests
 from PIL import Image
 
 BASE_DIR = Path(__file__).resolve().parent
+META_FILE = BASE_DIR / "uploads" / "metadata.json"
 
 
 def load_env_file() -> None:
@@ -28,10 +30,7 @@ def load_env_file() -> None:
 load_env_file()
 
 CUTOUT_MODE = os.getenv("CUTOUT_MODE", "local").strip().lower()
-IMAGE_API_KEY = os.getenv("IMAGE_API_KEY", "")
-IMAGE_API_BASE_URL = os.getenv("IMAGE_API_BASE_URL", "").rstrip("/")
 IMAGE_API_MODEL = os.getenv("IMAGE_API_MODEL", "gpt-image-2")
-
 OUTPUT_WIDTH = int(os.getenv("OUTPUT_WIDTH", "1500"))
 OUTPUT_DPI = int(os.getenv("OUTPUT_DPI", "96"))
 OUTPUT_PADDING = int(os.getenv("OUTPUT_PADDING", "10"))
@@ -43,12 +42,24 @@ PROMPT = (
 )
 
 
+def get_image_api_settings() -> tuple[str, str]:
+    try:
+        metadata = json.loads(META_FILE.read_text(encoding="utf-8"))
+        settings = metadata.get("imageApiSettings", {})
+        endpoint_url = settings.get("endpointUrl", "").strip().rstrip("/")
+        api_key = settings.get("apiKey", "").strip()
+        if endpoint_url and api_key:
+            return endpoint_url, api_key
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, AttributeError):
+        pass
+    return os.getenv("IMAGE_API_BASE_URL", "").strip().rstrip("/"), os.getenv("IMAGE_API_KEY", "").strip()
+
+
 class APICutoutProcessor:
     """API 模式抠图处理器"""
 
     def __init__(self) -> None:
-        self.api_key = IMAGE_API_KEY
-        self.base_url = IMAGE_API_BASE_URL
+        self.base_url, self.api_key = get_image_api_settings()
         self.model = IMAGE_API_MODEL
         self.timeout = 180
 
@@ -85,11 +96,11 @@ class APICutoutProcessor:
             )
 
         if not response.ok:
-            raise RuntimeError(f"API call failed: HTTP {response.status_code} {response.text[:300]}")
+            raise RuntimeError(f"API call failed: HTTP {response.status_code}")
 
         result = response.json()
         if "data" not in result or not result["data"]:
-            raise RuntimeError(f"API call failed: unexpected response {str(result)[:300]}")
+            raise RuntimeError("API call failed: unexpected response")
 
         image_data = result["data"][0]
         if "b64_json" in image_data:
@@ -105,7 +116,8 @@ class APICutoutProcessor:
 def get_cutout_processor(mode: str | None = None):
     mode = (mode or CUTOUT_MODE).strip().lower()
     if mode == "api":
-        if not IMAGE_API_KEY or not IMAGE_API_BASE_URL:
+        base_url, api_key = get_image_api_settings()
+        if not api_key or not base_url:
             raise ValueError("API mode requires IMAGE_API_KEY and IMAGE_API_BASE_URL")
         return APICutoutProcessor()
 

@@ -44,3 +44,37 @@ export type CreditRecord = {
   taskId?: string;
   createdAt: string;
 };
+
+export type BackupConfig = {
+  endpoint: string;
+  region: string;
+  bucket: string;
+  keyPrefix: string;
+  accessKeyId: string;
+  secretAccessKey?: string;
+  hasSecretAccessKey?: boolean;
+  forcePathStyle: boolean;
+  scheduleEnabled: boolean;
+  cronExpression: string;
+  retentionDays: number;
+  maxBackups: number;
+};
+
+export type ImageApiSettings = {
+  endpointUrl: string;
+  hasApiKey: boolean;
+};
+
+export type BackupRecord = {
+  id: string;
+  status: "completed" | "failed";
+  fileName: string;
+  size: number;
+  createdAt: string;
+  expiresAt?: string;
+  trigger: string;
+  storage: "local" | "s3";
+  warning?: string;
+  cleanupWarning?: string;
+  restoreAvailable: boolean;
+};

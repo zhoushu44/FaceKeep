@@ -1,4 +1,4 @@
-import type { CreditRecord, ServerFile, UserAccount } from "@/types";
+import type { BackupConfig, BackupRecord, CreditRecord, ImageApiSettings, ServerFile, UserAccount } from "@/types";
 
 const API_BASE = "";
 export const USER_SESSION_KEY = "facekeep_user_api_key";
@@ -16,13 +16,36 @@ async function adminFetch(path: string, init: RequestInit = {}): Promise<Respons
   return response;
 }
 
+async function responseError(response: Response, fallback: string): Promise<Error> {
+  const data = await response.json().catch(() => null);
+  return new Error(data?.detail || fallback);
+}
+
 export async function adminLogin(username: string, password: string): Promise<string> {
   const response = await fetch(`${API_BASE}/api/admin/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
   });
-  if (!response.ok) throw new Error("管理员用户名或密码错误");
+  if (!response.ok) throw await responseError(response, "管理员用户名或密码错误");
+  const data = await response.json();
+  return data.token;
+}
+
+export async function fetchAdminBootstrapStatus(): Promise<boolean> {
+  const response = await fetch(`${API_BASE}/api/admin/bootstrap/status`);
+  if (!response.ok) throw await responseError(response, "初始管理员状态加载失败");
+  const data = await response.json();
+  return data.registrationAllowed === true;
+}
+
+export async function registerInitialAdmin(payload: { username: string; email: string; password: string; confirmPassword: string }): Promise<string> {
+  const response = await fetch(`${API_BASE}/api/admin/bootstrap/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw await responseError(response, "初始管理员注册失败");
   const data = await response.json();
   return data.token;
 }
@@ -183,6 +206,66 @@ export async function fetchCreditRecords(userId?: string): Promise<CreditRecord[
   if (!response.ok) throw new Error("积分记录加载失败");
   const data = await response.json();
   return data.records;
+}
+
+export async function fetchImageApiSettings(): Promise<ImageApiSettings> {
+  const response = await adminFetch("/api/admin/image-api-settings");
+  if (!response.ok) throw await responseError(response, "图像 API 设置加载失败");
+  return (await response.json()).settings;
+}
+
+export async function saveImageApiSettings(payload: { endpointUrl: string; apiKey: string }): Promise<ImageApiSettings> {
+  const response = await adminFetch("/api/admin/image-api-settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+  if (!response.ok) throw await responseError(response, "图像 API 设置保存失败");
+  return (await response.json()).settings;
+}
+
+export async function fetchBackupConfig(): Promise<BackupConfig> {
+  const response = await adminFetch("/api/admin/backups/config");
+  if (!response.ok) throw await responseError(response, "备份配置加载失败");
+  return (await response.json()).config;
+}
+
+export async function saveBackupConfig(config: BackupConfig): Promise<BackupConfig> {
+  const response = await adminFetch("/api/admin/backups/config", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(config) });
+  if (!response.ok) throw await responseError(response, "备份配置保存失败");
+  return (await response.json()).config;
+}
+
+export async function testBackupConnection(): Promise<string> {
+  const response = await adminFetch("/api/admin/backups/test-connection", { method: "POST" });
+  if (!response.ok) throw await responseError(response, "S3 连接测试失败");
+  return (await response.json()).message;
+}
+
+export async function fetchBackups(): Promise<BackupRecord[]> {
+  const response = await adminFetch("/api/admin/backups");
+  if (!response.ok) throw await responseError(response, "备份记录加载失败");
+  return (await response.json()).backups;
+}
+
+export async function createBackup(): Promise<BackupRecord> {
+  const response = await adminFetch("/api/admin/backups", { method: "POST" });
+  if (!response.ok) throw await responseError(response, "备份创建失败");
+  return (await response.json()).backup;
+}
+
+export async function downloadBackup(id: string): Promise<Blob> {
+  const response = await adminFetch(`/api/admin/backups/${id}/download`);
+  if (!response.ok) throw await responseError(response, "备份下载失败");
+  return response.blob();
+}
+
+export async function restoreBackup(id: string): Promise<string> {
+  const response = await adminFetch(`/api/admin/backups/${id}/restore`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirm: true }) });
+  if (!response.ok) throw await responseError(response, "备份恢复失败");
+  return (await response.json()).message;
+}
+
+export async function deleteBackup(id: string): Promise<string | undefined> {
+  const response = await adminFetch(`/api/admin/backups/${id}`, { method: "DELETE" });
+  if (!response.ok) throw await responseError(response, "备份删除失败");
+  return (await response.json()).warning;
 }
 
 export async function login(username: string, password: string): Promise<UserAccount> {
