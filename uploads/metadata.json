@@ -5542,15 +5542,17 @@
     "f38c54d749364fcfa10966c973b0420b": {
       "taskId": "f38c54d749364fcfa10966c973b0420b",
       "userId": "76535e45b52b4a819b8fd77326e80e14",
-      "status": "queued",
-      "progress": 0,
+      "status": "failed",
+      "progress": 100,
       "fileName": "10528812154846.jpeg",
       "fileType": "image/jpeg",
       "headCount": 2,
       "creditCost": 2,
       "sourcePath": "E:\\360MoveData\\Users\\Administrator\\Desktop\\FaceKeep\\uploads\\tasks\\f38c54d749364fcfa10966c973b0420b_10528812154846.jpeg",
       "createdAt": "2026-07-06T18:05:23.097934+08:00",
-      "updatedAt": "2026-07-06T18:05:23.097934+08:00"
+      "updatedAt": "2026-07-13T14:06:39.902592+08:00",
+      "error": "[Errno 2] No such file or directory: 'E:\\\\360MoveData\\\\Users\\\\Administrator\\\\Desktop\\\\FaceKeep\\\\uploads\\\\tasks\\\\f38c54d749364fcfa10966c973b0420b_10528812154846.jpeg'",
+      "creditRefunded": true
     },
     "a133d321590541ab968086f3454464a1": {
       "taskId": "a133d321590541ab968086f3454464a1",
@@ -5572,15 +5574,17 @@
     "4d6f638dd37b4239ace8ea279d6bb21b": {
       "taskId": "4d6f638dd37b4239ace8ea279d6bb21b",
       "userId": "76535e45b52b4a819b8fd77326e80e14",
-      "status": "queued",
-      "progress": 0,
+      "status": "failed",
+      "progress": 100,
       "fileName": "11907582624846.jpeg",
       "fileType": "image/jpeg",
       "headCount": 2,
       "creditCost": 2,
       "sourcePath": "E:\\360MoveData\\Users\\Administrator\\Desktop\\FaceKeep\\uploads\\tasks\\4d6f638dd37b4239ace8ea279d6bb21b_11907582624846.jpeg",
       "createdAt": "2026-07-06T18:08:34.13792+08:00",
-      "updatedAt": "2026-07-06T18:08:34.137936+08:00"
+      "updatedAt": "2026-07-13T14:06:39.922588+08:00",
+      "error": "[Errno 2] No such file or directory: 'E:\\\\360MoveData\\\\Users\\\\Administrator\\\\Desktop\\\\FaceKeep\\\\uploads\\\\tasks\\\\4d6f638dd37b4239ace8ea279d6bb21b_11907582624846.jpeg'",
+      "creditRefunded": true
     },
     "b95ae1023425443787cb5adc77e81c6d": {
       "taskId": "b95ae1023425443787cb5adc77e81c6d",
@@ -5602,15 +5606,17 @@
     "6dd27c7a82c04fb3bd9f823e0aa1571f": {
       "taskId": "6dd27c7a82c04fb3bd9f823e0aa1571f",
       "userId": "76535e45b52b4a819b8fd77326e80e14",
-      "status": "queued",
-      "progress": 0,
+      "status": "failed",
+      "progress": 100,
       "fileName": "13215518794846.jpeg",
       "fileType": "image/jpeg",
       "headCount": 2,
       "creditCost": 2,
       "sourcePath": "E:\\360MoveData\\Users\\Administrator\\Desktop\\FaceKeep\\uploads\\tasks\\6dd27c7a82c04fb3bd9f823e0aa1571f_13215518794846.jpeg",
       "createdAt": "2026-07-06T18:11:43.160525+08:00",
-      "updatedAt": "2026-07-06T18:11:43.160525+08:00"
+      "updatedAt": "2026-07-13T14:06:39.94362+08:00",
+      "error": "[Errno 2] No such file or directory: 'E:\\\\360MoveData\\\\Users\\\\Administrator\\\\Desktop\\\\FaceKeep\\\\uploads\\\\tasks\\\\6dd27c7a82c04fb3bd9f823e0aa1571f_13215518794846.jpeg'",
+      "creditRefunded": true
     },
     "0250c95d043943438d186b9b5748ad78": {
       "taskId": "0250c95d043943438d186b9b5748ad78",
@@ -5649,41 +5655,47 @@
     "e767f067813e4e65a051f15079449b45": {
       "taskId": "e767f067813e4e65a051f15079449b45",
       "userId": "76535e45b52b4a819b8fd77326e80e14",
-      "status": "queued",
-      "progress": 0,
+      "status": "failed",
+      "progress": 100,
       "fileName": "16523946306055.jpeg",
       "fileType": "image/jpeg",
       "headCount": 2,
       "creditCost": 2,
       "sourcePath": "E:\\360MoveData\\Users\\Administrator\\Desktop\\FaceKeep\\uploads\\tasks\\e767f067813e4e65a051f15079449b45_16523946306055.jpeg",
       "createdAt": "2026-07-06T18:14:57.664025+08:00",
-      "updatedAt": "2026-07-06T18:14:57.664025+08:00"
+      "updatedAt": "2026-07-13T14:06:40.126354+08:00",
+      "error": "[Errno 2] No such file or directory: 'E:\\\\360MoveData\\\\Users\\\\Administrator\\\\Desktop\\\\FaceKeep\\\\uploads\\\\tasks\\\\e767f067813e4e65a051f15079449b45_16523946306055.jpeg'",
+      "creditRefunded": true
     },
     "7bc0da073bc34e3890f581ca5d2ba60a": {
       "taskId": "7bc0da073bc34e3890f581ca5d2ba60a",
       "userId": "76535e45b52b4a819b8fd77326e80e14",
-      "status": "queued",
-      "progress": 0,
+      "status": "failed",
+      "progress": 100,
       "fileName": "18874141824846.png",
       "fileType": "image/png",
       "headCount": 4,
       "creditCost": 4,
       "sourcePath": "E:\\360MoveData\\Users\\Administrator\\Desktop\\FaceKeep\\uploads\\tasks\\7bc0da073bc34e3890f581ca5d2ba60a_18874141824846.png",
       "createdAt": "2026-07-06T18:18:05.363504+08:00",
-      "updatedAt": "2026-07-06T18:18:05.363504+08:00"
+      "updatedAt": "2026-07-13T14:06:39.994209+08:00",
+      "error": "[Errno 2] No such file or directory: 'E:\\\\360MoveData\\\\Users\\\\Administrator\\\\Desktop\\\\FaceKeep\\\\uploads\\\\tasks\\\\7bc0da073bc34e3890f581ca5d2ba60a_18874141824846.png'",
+      "creditRefunded": true
     },
     "867a84e7c44f441facfc7cb612cf3b77": {
       "taskId": "867a84e7c44f441facfc7cb612cf3b77",
       "userId": "76535e45b52b4a819b8fd77326e80e14",
-      "status": "queued",
-      "progress": 0,
+      "status": "failed",
+      "progress": 100,
       "fileName": "20222635914846.jpeg",
       "fileType": "image/jpeg",
       "headCount": 5,
       "creditCost": 5,
       "sourcePath": "E:\\360MoveData\\Users\\Administrator\\Desktop\\FaceKeep\\uploads\\tasks\\867a84e7c44f441facfc7cb612cf3b77_20222635914846.jpeg",
       "createdAt": "2026-07-06T18:21:12.473022+08:00",
-      "updatedAt": "2026-07-06T18:21:12.473022+08:00"
+      "updatedAt": "2026-07-13T14:06:40.065256+08:00",
+      "error": "[Errno 2] No such file or directory: 'E:\\\\360MoveData\\\\Users\\\\Administrator\\\\Desktop\\\\FaceKeep\\\\uploads\\\\tasks\\\\867a84e7c44f441facfc7cb612cf3b77_20222635914846.jpeg'",
+      "creditRefunded": true
     },
     "00147f3adf224bc9bfe1ae17ba181a62": {
       "taskId": "00147f3adf224bc9bfe1ae17ba181a62",
@@ -5817,9 +5829,9 @@
       "apiKey": "fk_f58169fdbe2143739d8d098ed6d838c115659795",
       "passwordSalt": "488ab2e3a3cc42a580a62fbe0dc56ab7",
       "passwordHash": "428ced7aaed75c9f6984c787c154b7a8d7e069cec3fc0310e165abe45cae14f9",
-      "credits": 967,
+      "credits": 973,
       "createdAt": "2026-07-06T18:05:20.20871+08:00",
-      "updatedAt": "2026-07-06T18:21:12.476022+08:00"
+      "updatedAt": "2026-07-13T14:06:40.126354+08:00"
     },
     "d6dee2ca62b64bd7801cfa999dd2ef4c": {
       "id": "d6dee2ca62b64bd7801cfa999dd2ef4c",
@@ -5845,6 +5857,60 @@
     }
   },
   "creditRecords": [
+    {
+      "id": "ddd6ddba11e84f17a580e1a2b32881dd",
+      "userId": "76535e45b52b4a819b8fd77326e80e14",
+      "amount": 1,
+      "balance": 973,
+      "reason": "failed_task_refund",
+      "taskId": "e767f067813e4e65a051f15079449b45",
+      "createdAt": "2026-07-13T14:06:40.126354+08:00"
+    },
+    {
+      "id": "137f4cf5d79645cc964e0eee1ac8b809",
+      "userId": "76535e45b52b4a819b8fd77326e80e14",
+      "amount": 1,
+      "balance": 972,
+      "reason": "failed_task_refund",
+      "taskId": "867a84e7c44f441facfc7cb612cf3b77",
+      "createdAt": "2026-07-13T14:06:40.065256+08:00"
+    },
+    {
+      "id": "5ce9f0c5cc0947218493ba479e755995",
+      "userId": "76535e45b52b4a819b8fd77326e80e14",
+      "amount": 1,
+      "balance": 971,
+      "reason": "failed_task_refund",
+      "taskId": "7bc0da073bc34e3890f581ca5d2ba60a",
+      "createdAt": "2026-07-13T14:06:39.994209+08:00"
+    },
+    {
+      "id": "d1714d14aa0540e29f8e3ed87f56a154",
+      "userId": "76535e45b52b4a819b8fd77326e80e14",
+      "amount": 1,
+      "balance": 970,
+      "reason": "failed_task_refund",
+      "taskId": "6dd27c7a82c04fb3bd9f823e0aa1571f",
+      "createdAt": "2026-07-13T14:06:39.94362+08:00"
+    },
+    {
+      "id": "119c995c9a494236ad71c8313a10b7ca",
+      "userId": "76535e45b52b4a819b8fd77326e80e14",
+      "amount": 1,
+      "balance": 969,
+      "reason": "failed_task_refund",
+      "taskId": "4d6f638dd37b4239ace8ea279d6bb21b",
+      "createdAt": "2026-07-13T14:06:39.922588+08:00"
+    },
+    {
+      "id": "404a6377cf364cac921a6e3b059af35b",
+      "userId": "76535e45b52b4a819b8fd77326e80e14",
+      "amount": 1,
+      "balance": 968,
+      "reason": "failed_task_refund",
+      "taskId": "f38c54d749364fcfa10966c973b0420b",
+      "createdAt": "2026-07-13T14:06:39.902592+08:00"
+    },
     {
       "id": "c7177bf2f0c24e90a4df1804589bd297",
       "userId": "ab35cee328de4d4d8549eab9f1e71749",
@@ -5873,15 +5939,6 @@
       "createdAt": "2026-07-11T10:31:45.923799+08:00"
     },
     {
-      "id": "4d806a3faef74e90b5628bed3562bf4d",
-      "userId": "ab35cee328de4d4d8549eab9f1e71749",
-      "amount": 5,
-      "balance": 5,
-      "reason": "initial_credits",
-      "taskId": null,
-      "createdAt": "2026-07-11T10:21:52.988537+08:00"
-    },
-    {
       "id": "ac893692228d436c8d4d45bb362b3bf5",
       "userId": "d6dee2ca62b64bd7801cfa999dd2ef4c",
       "amount": -3,
@@ -5898,42 +5955,6 @@
       "reason": "task_image_cost",
       "taskId": "00147f3adf224bc9bfe1ae17ba181a62",
       "createdAt": "2026-07-11T09:46:47.635471+08:00"
-    },
-    {
-      "id": "642ed73055ff4d08b6732d64b25c1daa",
-      "userId": "d6dee2ca62b64bd7801cfa999dd2ef4c",
-      "amount": 8,
-      "balance": 10,
-      "reason": "e2e_acceptance_topup",
-      "taskId": null,
-      "createdAt": "2026-07-11T09:45:00.407312+08:00"
-    },
-    {
-      "id": "6004219ae5e3450d8245570f403e3bad",
-      "userId": "d6dee2ca62b64bd7801cfa999dd2ef4c",
-      "amount": 2,
-      "balance": 2,
-      "reason": "initial_credits",
-      "taskId": null,
-      "createdAt": "2026-07-11T09:45:00.376558+08:00"
-    },
-    {
-      "id": "fe19a07259c54349a1ef191ce6e9f0d8",
-      "userId": "1cb5aa9c2b97402a959bacfe1c93810f",
-      "amount": 1,
-      "balance": 1,
-      "reason": "admin_add",
-      "taskId": null,
-      "createdAt": "2026-07-11T09:10:01.168058+08:00"
-    },
-    {
-      "id": "7ef96dee5b0e4297b683020b80034270",
-      "userId": "1cb5aa9c2b97402a959bacfe1c93810f",
-      "amount": -1,
-      "balance": 0,
-      "reason": "admin_subtract",
-      "taskId": null,
-      "createdAt": "2026-07-11T09:09:59.036733+08:00"
     },
     {
       "id": "d5cd5ee51dbf41f6947ce31e7aeab1ad",
@@ -6033,15 +6054,6 @@
       "reason": "task_image_cost",
       "taskId": "948cb6ad1bee4efd9efb5cab56769357",
       "createdAt": "2026-07-06T18:05:20.841232+08:00"
-    },
-    {
-      "id": "3bceae2b5e904df48c6ed87b9f8f3ee6",
-      "userId": "76535e45b52b4a819b8fd77326e80e14",
-      "amount": 1000,
-      "balance": 1000,
-      "reason": "initial_credits",
-      "taskId": null,
-      "createdAt": "2026-07-06T18:05:20.20871+08:00"
     },
     {
       "id": "8cdf0c2532244198b2a53dc2074076f8",
@@ -6926,15 +6938,6 @@
       "createdAt": "2026-07-06T17:59:50.805888+08:00"
     },
     {
-      "id": "6e165ce3fd3c4996aef35a08690e8cae",
-      "userId": "728a7efdd84d497dbca171c760a1f68d",
-      "amount": 300,
-      "balance": 300,
-      "reason": "initial_credits",
-      "taskId": null,
-      "createdAt": "2026-07-06T17:59:50.406674+08:00"
-    },
-    {
       "id": "8f4959a2d436432aa316bfb48eeceea5",
       "userId": "ff1bc6a76e6f4d54b3fdfee64ef8e62b",
       "amount": -1,
@@ -7113,15 +7116,6 @@
       "reason": "task_image_cost",
       "taskId": "e5ae80ac26414c6fb6b5df841b220743",
       "createdAt": "2026-07-06T17:58:18.804901+08:00"
-    },
-    {
-      "id": "eb65443f9975482bbba04279791a88e9",
-      "userId": "ff1bc6a76e6f4d54b3fdfee64ef8e62b",
-      "amount": 300,
-      "balance": 300,
-      "reason": "initial_credits",
-      "taskId": null,
-      "createdAt": "2026-07-06T17:58:18.169627+08:00"
     },
     {
       "id": "5118fba20c0148eea22eff30f95dbe1c",
@@ -8024,24 +8018,6 @@
       "createdAt": "2026-07-06T16:52:58.975126+08:00"
     },
     {
-      "id": "0120595eef5d4723898064ac398de2fa",
-      "userId": "7af440cc2bcb4dbb8d6152101c8622fa",
-      "amount": 1000,
-      "balance": 1000,
-      "reason": "initial_credits",
-      "taskId": null,
-      "createdAt": "2026-07-06T16:52:58.32869+08:00"
-    },
-    {
-      "id": "ef369bbd351844bdb08d7b9523a89fb6",
-      "userId": "d98d7751348e4112acc1bc72579c6ced",
-      "amount": 9,
-      "balance": 9,
-      "reason": "initial_credits",
-      "taskId": null,
-      "createdAt": "2026-07-06T16:36:04.71099+08:00"
-    },
-    {
       "id": "35b2a17215cb453c968d8163a8091f9b",
       "userId": "39d0409197ae402b8fca1c4b911d383c",
       "amount": -2,
@@ -8942,15 +8918,6 @@
       "createdAt": "2026-07-06T16:17:59.748586+08:00"
     },
     {
-      "id": "35115f140d204160bcb71fa8969c472f",
-      "userId": "39d0409197ae402b8fca1c4b911d383c",
-      "amount": 1000,
-      "balance": 1000,
-      "reason": "initial_credits",
-      "taskId": null,
-      "createdAt": "2026-07-06T16:17:59.018159+08:00"
-    },
-    {
       "id": "06a62e41eda34dd6bed867b42d48fb10",
       "userId": "1cb5aa9c2b97402a959bacfe1c93810f",
       "amount": -1,
@@ -8958,15 +8925,6 @@
       "reason": "task_image_cost",
       "taskId": "8560c42f14f2477e9c14f01881cead79",
       "createdAt": "2026-07-06T16:10:23.140148+08:00"
-    },
-    {
-      "id": "c91dab6b3ce144b7ad3a3e6dc7114959",
-      "userId": "1cb5aa9c2b97402a959bacfe1c93810f",
-      "amount": 2,
-      "balance": 2,
-      "reason": "initial_credits",
-      "taskId": null,
-      "createdAt": "2026-07-06T16:10:23.031781+08:00"
     }
   ],
   "admins": {},
@@ -8997,8 +8955,9 @@
     }
   ],
   "imageApiSettings": {
-    "endpointUrl": "",
-    "apiKey": "",
-    "updatedAt": null
+    "endpointUrl": "https://token.86969678.xyz/v1",
+    "apiKey": "sk-efc14af3c857679d65b0120664f8da3bd2e245575a57117f32dc943d33dfd76c",
+    "maxTaskWorkers": 10,
+    "updatedAt": "2026-07-13T07:07:20.907302+00:00"
   }
 }

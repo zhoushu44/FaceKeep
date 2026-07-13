@@ -7,6 +7,7 @@ import Login from "@/pages/Login";
 import UserCenter from "@/pages/UserCenter";
 import AdminLogin from "@/pages/AdminLogin";
 import AdminRegister from "@/pages/AdminRegister";
+import ApiDocs from "@/pages/ApiDocs";
 import { ADMIN_SESSION_KEY } from "@/lib/api";
 
 type AdminPage = "admin" | "backup" | "imageApiSettings";
@@ -23,6 +24,7 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/api-docs" element={<ApiDocs />} />
         <Route path="/admin" element={<AdminRoute />} />
         <Route path="/admin/backups" element={<AdminRoute page="backup" />} />
         <Route path="/admin/image-api-settings" element={<AdminRoute page="imageApiSettings" />} />

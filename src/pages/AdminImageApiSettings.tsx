@@ -7,6 +7,8 @@ export default function AdminImageApiSettings() {
   const navigate = useNavigate();
   const [endpointUrl, setEndpointUrl] = useState("");
   const [initialEndpointUrl, setInitialEndpointUrl] = useState("");
+  const [maxTaskWorkers, setMaxTaskWorkers] = useState(10);
+  const [initialMaxTaskWorkers, setInitialMaxTaskWorkers] = useState(10);
   const [apiKey, setApiKey] = useState("");
   const [hasApiKey, setHasApiKey] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -16,6 +18,8 @@ export default function AdminImageApiSettings() {
     const settings = await fetchImageApiSettings();
     setEndpointUrl(settings.endpointUrl);
     setInitialEndpointUrl(settings.endpointUrl);
+    setMaxTaskWorkers(settings.maxTaskWorkers);
+    setInitialMaxTaskWorkers(settings.maxTaskWorkers);
     setHasApiKey(settings.hasApiKey);
     setApiKey("");
   }, []);
@@ -35,6 +39,7 @@ export default function AdminImageApiSettings() {
       return "请输入有效的 HTTP/HTTPS 端点 URL";
     }
     if (apiKey && (apiKey.length < 16 || apiKey.length > 512 || /\s/.test(apiKey))) return "API Key 必须为 16-512 个字符且不得包含空白";
+    if (!Number.isInteger(maxTaskWorkers) || maxTaskWorkers < 1 || maxTaskWorkers > 32) return "全局任务并发必须为 1-32 的整数";
     if (!apiKey && !hasApiKey) return "请填写 API Key";
     return undefined;
   };
@@ -46,9 +51,11 @@ export default function AdminImageApiSettings() {
     setBusy(true);
     setMessage("");
     try {
-      const settings = await saveImageApiSettings({ endpointUrl: endpointUrl.trim(), apiKey });
+      const settings = await saveImageApiSettings({ endpointUrl: endpointUrl.trim(), apiKey, maxTaskWorkers });
       setEndpointUrl(settings.endpointUrl);
       setInitialEndpointUrl(settings.endpointUrl);
+      setMaxTaskWorkers(settings.maxTaskWorkers);
+      setInitialMaxTaskWorkers(settings.maxTaskWorkers);
       setHasApiKey(settings.hasApiKey);
       setApiKey("");
       setMessage("图像 API 设置已保存");
@@ -60,13 +67,13 @@ export default function AdminImageApiSettings() {
   };
 
   const cancel = () => {
-    if ((endpointUrl !== initialEndpointUrl || apiKey) && !window.confirm("尚未保存的修改将丢失，确认返回吗？")) return;
+    if ((endpointUrl !== initialEndpointUrl || maxTaskWorkers !== initialMaxTaskWorkers || apiKey) && !window.confirm("尚未保存的修改将丢失，确认返回吗？")) return;
     navigate("/admin");
   };
 
   return <main className="min-h-screen bg-[#08111f] px-4 py-6 text-slate-100 lg:px-8"><div className="mx-auto max-w-3xl">
     <header className="mb-6 rounded-[28px] border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20 backdrop-blur"><Link className="mb-3 inline-flex items-center gap-2 text-sm text-cyan-200 hover:text-white" to="/admin"><ArrowLeft className="h-4 w-4" /> 返回管理页面</Link><h1 className="text-3xl font-black text-white">图像 API 设置</h1><p className="mt-2 text-sm text-slate-400">配置用于图像编辑接口的服务端地址与 API Key。密钥仅保存在服务器，不会再次显示。</p></header>
     {message && <div className="mb-5 rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-sm text-cyan-100">{message}</div>}
-    <section className="rounded-[28px] border border-slate-700/70 bg-slate-950/70 p-5"><label className="admin-label">Endpoint URL<input disabled={busy} className="admin-input" type="url" value={endpointUrl} placeholder="https://api.example.com/v1" onChange={(event) => setEndpointUrl(event.target.value)} /></label><p className="mt-1 text-xs text-slate-500">仅支持 HTTP/HTTPS；可填写路径，末尾斜杠会自动移除。</p><label className="admin-label">API Key<input disabled={busy} className="admin-input" type="password" value={apiKey} placeholder={hasApiKey ? "已保存，留空不修改" : "至少 16 个字符"} autoComplete="new-password" onChange={(event) => setApiKey(event.target.value)} /></label><p className="mt-1 text-xs text-slate-500">长度 16-512 个字符，且不得包含空白或控制字符。</p><div className="mt-6 flex justify-end gap-3"><button className="secondary-download" disabled={busy} onClick={cancel}>取消</button><button className="download-button" disabled={busy} onClick={() => void save()}><Save className="h-4 w-4" /> {busy ? "保存中..." : "保存设置"}</button></div></section>
+    <section className="rounded-[28px] border border-slate-700/70 bg-slate-950/70 p-5"><label className="admin-label">Endpoint URL<input disabled={busy} className="admin-input" type="url" value={endpointUrl} placeholder="https://api.example.com/v1" onChange={(event) => setEndpointUrl(event.target.value)} /></label><p className="mt-1 text-xs text-slate-500">仅支持 HTTP/HTTPS；可填写路径，末尾斜杠会自动移除。</p><label className="admin-label">API Key<input disabled={busy} className="admin-input" type="password" value={apiKey} placeholder={hasApiKey ? "已保存，留空不修改" : "至少 16 个字符"} autoComplete="new-password" onChange={(event) => setApiKey(event.target.value)} /></label><p className="mt-1 text-xs text-slate-500">长度 16-512 个字符，且不得包含空白或控制字符。</p><label className="admin-label">全局任务并发<input disabled={busy} className="admin-input" type="number" min="1" max="32" step="1" value={maxTaskWorkers} onChange={(event) => setMaxTaskWorkers(Number(event.target.value))} /></label><p className="mt-1 text-xs text-slate-500">影响所有用户的任务队列，设置服务器最大同时处理数量。可填 1-32，默认 10。</p><div className="mt-6 flex justify-end gap-3"><button className="secondary-download" disabled={busy} onClick={cancel}>取消</button><button className="download-button" disabled={busy} onClick={() => void save()}><Save className="h-4 w-4" /> {busy ? "保存中..." : "保存设置"}</button></div></section>
   </div></main>;
 }

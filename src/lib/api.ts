@@ -115,11 +115,12 @@ export type ImageTask = {
   taskId: string;
   status: "queued" | "processing" | "completed" | "failed";
   progress: number;
+  queuePosition?: number | null;
   imageUrl?: string;
   error?: string;
 };
 
-export async function submitImageTask(file: File, apiKey: string): Promise<{ taskId: string }> {
+export async function submitImageTask(file: File, apiKey: string): Promise<ImageTask> {
   const form = new FormData();
   form.append("file", file);
   const response = await fetch(`${API_BASE}/api/tasks/submit`, {
@@ -132,14 +133,14 @@ export async function submitImageTask(file: File, apiKey: string): Promise<{ tas
   return data;
 }
 
-export async function fetchImageTask(taskId: string): Promise<ImageTask> {
-  const response = await fetch(`${API_BASE}/api/tasks/${taskId}`);
+export async function fetchImageTask(taskId: string, apiKey: string): Promise<ImageTask> {
+  const response = await fetch(`${API_BASE}/api/tasks/${taskId}`, { headers: { "X-API-Key": apiKey } });
   if (!response.ok) throw new Error("任务状态获取失败");
   return response.json();
 }
 
-export async function fetchTaskImage(taskId: string): Promise<Blob> {
-  const response = await fetch(`${API_BASE}/api/tasks/${taskId}/image`);
+export async function fetchTaskImage(taskId: string, apiKey: string): Promise<Blob> {
+  const response = await fetch(`${API_BASE}/api/tasks/${taskId}/image`, { headers: { "X-API-Key": apiKey } });
   if (!response.ok) throw new Error("结果图片加载失败");
   return response.blob();
 }
@@ -214,7 +215,7 @@ export async function fetchImageApiSettings(): Promise<ImageApiSettings> {
   return (await response.json()).settings;
 }
 
-export async function saveImageApiSettings(payload: { endpointUrl: string; apiKey: string }): Promise<ImageApiSettings> {
+export async function saveImageApiSettings(payload: { endpointUrl: string; apiKey: string; maxTaskWorkers: number }): Promise<ImageApiSettings> {
   const response = await adminFetch("/api/admin/image-api-settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
   if (!response.ok) throw await responseError(response, "图像 API 设置保存失败");
   return (await response.json()).settings;

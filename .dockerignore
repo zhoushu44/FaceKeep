@@ -1,0 +1,10 @@
+.git
+.github
+.trae
+node_modules
+dist
+uploads
+.env
+*.log
+__pycache__
+*.py[cod]

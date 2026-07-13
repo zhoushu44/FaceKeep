@@ -18,10 +18,10 @@ import zipfile
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
-from fastapi import BackgroundTasks, FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response, StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, StrictInt
 from PIL import Image
 import cv2
 
@@ -66,6 +66,10 @@ BACKUP_LOCK = threading.RLock()
 SCHEDULE_STOP = threading.Event()
 SCHEDULE_THREAD: threading.Thread | None = None
 LAST_SCHEDULED_MINUTE: str | None = None
+TASK_DISPATCH_STOP = threading.Event()
+TASK_DISPATCH_CONDITION = threading.Condition(BACKUP_LOCK)
+TASK_DISPATCH_THREAD: threading.Thread | None = None
+ACTIVE_TASK_IDS: set[str] = set()
 OUTPUT_FORMAT = "PNG"
 PNG_WIDTH = OUTPUT_WIDTH
 PNG_DPI = OUTPUT_DPI
@@ -141,6 +145,7 @@ class RestoreBackupRequest(BaseModel):
 class ImageApiSettingsRequest(BaseModel):
     endpointUrl: str
     apiKey: str
+    maxTaskWorkers: StrictInt
 
 
 @lru_cache(maxsize=1)
@@ -157,7 +162,7 @@ def backup_defaults() -> dict:
 
 
 def image_api_settings_defaults() -> dict:
-    return {"endpointUrl": "", "apiKey": "", "updatedAt": None}
+    return {"endpointUrl": "", "apiKey": "", "maxTaskWorkers": 10, "updatedAt": None}
 
 
 def environment_image_api_settings() -> dict:
@@ -167,8 +172,20 @@ def environment_image_api_settings() -> dict:
     }
 
 
+def current_max_task_workers(settings: dict | None) -> int:
+    try:
+        value = int((settings or {}).get("maxTaskWorkers", 10))
+    except (TypeError, ValueError):
+        return 10
+    return value if 1 <= value <= 32 else 10
+
+
 def public_image_api_settings(settings: dict) -> dict:
-    return {"endpointUrl": settings.get("endpointUrl", ""), "hasApiKey": bool(settings.get("apiKey", ""))}
+    return {
+        "endpointUrl": settings.get("endpointUrl", ""),
+        "hasApiKey": bool(settings.get("apiKey", "")),
+        "maxTaskWorkers": current_max_task_workers(settings),
+    }
 
 
 def validate_image_api_settings(payload: ImageApiSettingsRequest, previous: dict) -> dict:
@@ -182,7 +199,9 @@ def validate_image_api_settings(payload: ImageApiSettingsRequest, previous: dict
         api_key = previous.get("apiKey", "")
     if not api_key or len(api_key) < 16 or len(api_key) > 512 or any(character.isspace() or ord(character) < 32 or ord(character) == 127 for character in api_key):
         raise HTTPException(status_code=400, detail="图像 API Key 必须为 16-512 个字符且不得包含空白或控制字符")
-    return {"endpointUrl": normalized_endpoint, "apiKey": api_key, "updatedAt": utc_now()}
+    if isinstance(payload.maxTaskWorkers, bool) or not 1 <= payload.maxTaskWorkers <= 32:
+        raise HTTPException(status_code=400, detail="全局任务并发必须为 1-32 的整数")
+    return {"endpointUrl": normalized_endpoint, "apiKey": api_key, "maxTaskWorkers": payload.maxTaskWorkers, "updatedAt": utc_now()}
 
 
 def ensure_storage() -> None:
@@ -394,11 +413,24 @@ def find_file(file_id: str) -> dict:
 
 
 def find_task(task_id: str) -> dict:
-    meta = load_meta()
-    task = meta.get("tasks", {}).get(task_id)
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return task
+    with BACKUP_LOCK:
+        meta = load_meta()
+        task = meta.get("tasks", {}).get(task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        return task
+
+
+def require_task_owner(task_id: str, api_key: str | None) -> tuple[dict, dict]:
+    user = find_user_by_key(api_key)
+    with BACKUP_LOCK:
+        meta = load_meta()
+        task = meta.get("tasks", {}).get(task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        if task.get("userId") != user.get("id"):
+            raise HTTPException(status_code=403, detail="Task access denied")
+        return task, meta
 
 
 def save_png_from_path(source_path: Path, target_path: Path, cutout: bool = False) -> tuple[int, int]:
@@ -417,47 +449,48 @@ def save_png_from_path(source_path: Path, target_path: Path, cutout: bool = Fals
 
 
 def run_image_task(task_id: str) -> None:
-    meta = load_meta()
-    task = meta.get("tasks", {}).get(task_id)
-    if not task:
-        return
-    task["status"] = "processing"
-    task["progress"] = 30
-    task["updatedAt"] = utc_now()
-    save_meta(meta)
-
     try:
-        source_path = Path(task["sourcePath"])
+        with BACKUP_LOCK:
+            task = load_meta().get("tasks", {}).get(task_id)
+            if not task or task.get("status") != "processing":
+                return
+            source_path = Path(task["sourcePath"])
         output_path = TASKS_DIR / f"{task_id}_1500w_96dpi.png"
         width, height = save_png_from_path(source_path, output_path, cutout=True)
-        meta = load_meta()
-        task = meta["tasks"][task_id]
-        task.update(
-            {
-                "status": "completed",
-                "progress": 100,
-                "outputPath": str(output_path),
-                "outputWidth": width,
-                "outputHeight": height,
-                "imageUrl": f"/api/tasks/{task_id}/image",
-                "updatedAt": utc_now(),
-            }
-        )
-        save_meta(meta)
+        with BACKUP_LOCK:
+            meta = load_meta()
+            task = meta.get("tasks", {}).get(task_id)
+            if task:
+                task.update({"status": "completed", "progress": 100, "outputPath": str(output_path), "outputWidth": width, "outputHeight": height, "imageUrl": f"/api/tasks/{task_id}/image", "updatedAt": utc_now()})
+                save_meta(meta)
     except Exception as exc:
-        meta = load_meta()
-        task = meta.get("tasks", {}).get(task_id)
-        if task:
-            task.update({"status": "failed", "progress": 100, "error": str(exc), "updatedAt": utc_now()})
-            refund_failed_task(meta, task)
-            save_meta(meta)
+        with BACKUP_LOCK:
+            meta = load_meta()
+            task = meta.get("tasks", {}).get(task_id)
+            if task:
+                task.update({"status": "failed", "progress": 100, "error": str(exc), "updatedAt": utc_now()})
+                refund_failed_task(meta, task)
+                save_meta(meta)
+    finally:
+        with TASK_DISPATCH_CONDITION:
+            ACTIVE_TASK_IDS.discard(task_id)
+            TASK_DISPATCH_CONDITION.notify_all()
 
 
-def public_task(task: dict) -> dict:
+def queued_position(task: dict, tasks: dict[str, dict]) -> int | None:
+    if task.get("status") != "queued":
+        return None
+    created_at = task.get("createdAt", "")
+    task_id = task.get("taskId", "")
+    return sum(1 for other in tasks.values() if other.get("status") == "queued" and (other.get("createdAt", ""), other.get("taskId", "")) < (created_at, task_id))
+
+
+def public_task(task: dict, tasks: dict[str, dict] | None = None) -> dict:
     return {
         "taskId": task["taskId"],
         "status": task["status"],
         "progress": task.get("progress", 0),
+        "queuePosition": queued_position(task, tasks or {}),
         "fileName": task.get("fileName"),
         "imageUrl": task.get("imageUrl"),
         "outputWidth": task.get("outputWidth"),
@@ -470,6 +503,56 @@ def public_task(task: dict) -> dict:
         "createdAt": task.get("createdAt"),
         "updatedAt": task.get("updatedAt"),
     }
+
+
+def configured_max_task_workers() -> int:
+    try:
+        return current_max_task_workers(load_meta().get("imageApiSettings"))
+    except Exception:
+        return 10
+
+
+def select_dispatchable_tasks(tasks: dict[str, dict], active_ids: set[str]) -> list[dict]:
+    available_slots = max(configured_max_task_workers() - len(active_ids), 0)
+    queued = sorted(
+        (task for task in tasks.values() if task.get("status") == "queued" and task.get("taskId") not in active_ids),
+        key=lambda task: (task.get("createdAt", ""), task.get("taskId", "")),
+    )
+    return queued[:available_slots]
+
+
+def dispatch_tasks() -> None:
+    while not TASK_DISPATCH_STOP.is_set():
+        workers: list[threading.Thread] = []
+        with TASK_DISPATCH_CONDITION:
+            meta = load_meta()
+            tasks = meta.get("tasks", {})
+            for task in select_dispatchable_tasks(tasks, ACTIVE_TASK_IDS):
+                task["status"] = "processing"
+                task["progress"] = 30
+                task["updatedAt"] = utc_now()
+                ACTIVE_TASK_IDS.add(task["taskId"])
+                workers.append(threading.Thread(target=run_image_task, args=(task["taskId"],), daemon=True))
+            if workers:
+                save_meta(meta)
+            else:
+                TASK_DISPATCH_CONDITION.wait(timeout=1)
+        for worker in workers:
+            worker.start()
+
+
+def restore_task_queue() -> None:
+    with TASK_DISPATCH_CONDITION:
+        meta = load_meta()
+        changed = False
+        for task in meta.get("tasks", {}).values():
+            if task.get("status") == "processing":
+                task.update({"status": "queued", "progress": 0, "updatedAt": utc_now()})
+                changed = True
+        ACTIVE_TASK_IDS.clear()
+        if changed:
+            save_meta(meta)
+        TASK_DISPATCH_CONDITION.notify_all()
 
 
 def to_public_file(item: dict) -> dict:
@@ -560,7 +643,7 @@ def admin_logout(authorization: str | None = Header(default=None)) -> dict:
 def get_image_api_settings(authorization: str | None = Header(default=None)) -> dict:
     require_admin(authorization)
     settings = load_meta()["imageApiSettings"]
-    effective_settings = settings if settings.get("endpointUrl") and settings.get("apiKey") else environment_image_api_settings()
+    effective_settings = settings if settings.get("endpointUrl") and settings.get("apiKey") else {**environment_image_api_settings(), "maxTaskWorkers": current_max_task_workers(settings)}
     return {"settings": public_image_api_settings(effective_settings)}
 
 
@@ -576,6 +659,8 @@ def save_image_api_settings(payload: ImageApiSettingsRequest, authorization: str
         meta["imageApiSettings"] = settings
         save_meta(meta)
     get_processor.cache_clear()
+    with TASK_DISPATCH_CONDITION:
+        TASK_DISPATCH_CONDITION.notify_all()
     return {"settings": public_image_api_settings(settings)}
 
 
@@ -862,7 +947,6 @@ def complete_upload(payload: CompleteUploadRequest) -> dict:
 
 @app.post("/api/tasks/submit")
 async def submit_task(
-    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     x_api_key: str | None = Header(default=None, alias="X-API-Key"),
     api_key: str | None = Form(default=None),
@@ -878,43 +962,27 @@ async def submit_task(
     with source_path.open("wb") as output:
         shutil.copyfileobj(file.file, output)
 
-    head_count = count_heads(source_path)
-    task = {
-        "taskId": task_id,
-        "userId": user["id"],
-        "status": "queued",
-        "progress": 0,
-        "fileName": filename,
-        "fileType": file.content_type,
-        "headCount": head_count,
-        "creditCost": 1,
-        "sourcePath": str(source_path),
-        "createdAt": utc_now(),
-        "updatedAt": utc_now(),
-    }
-    meta = load_meta()
-    meta.setdefault("tasks", {})[task_id] = task
-    user = deduct_credit_for_task(meta, user["id"], task_id)
-    save_meta(meta)
-    background_tasks.add_task(run_image_task, task_id)
-    return {
-        "taskId": task_id,
-        "statusUrl": f"/api/tasks/{task_id}",
-        "imageUrl": f"/api/tasks/{task_id}/image",
-        "headCount": head_count,
-        "creditCost": 1,
-        "credits": user["credits"],
-    }
+    task = {"taskId": task_id, "userId": user["id"], "status": "queued", "progress": 0, "fileName": filename, "fileType": file.content_type, "headCount": 1, "creditCost": 1, "sourcePath": str(source_path), "createdAt": utc_now(), "updatedAt": utc_now()}
+    with TASK_DISPATCH_CONDITION:
+        meta = load_meta()
+        meta.setdefault("tasks", {})[task_id] = task
+        user = deduct_credit_for_task(meta, user["id"], task_id)
+        save_meta(meta)
+        TASK_DISPATCH_CONDITION.notify_all()
+        response = public_task(task, meta["tasks"])
+    response.update({"statusUrl": f"/api/tasks/{task_id}", "imageUrl": f"/api/tasks/{task_id}/image", "credits": user["credits"]})
+    return response
 
 
 @app.get("/api/tasks/{task_id}")
-def get_task(task_id: str) -> dict:
-    return public_task(find_task(task_id))
+def get_task(task_id: str, x_api_key: str | None = Header(default=None, alias="X-API-Key")) -> dict:
+    task, meta = require_task_owner(task_id, x_api_key)
+    return public_task(task, meta["tasks"])
 
 
 @app.get("/api/tasks/{task_id}/image")
-def get_task_image(task_id: str) -> FileResponse:
-    task = find_task(task_id)
+def get_task_image(task_id: str, x_api_key: str | None = Header(default=None, alias="X-API-Key")) -> FileResponse:
+    task, _ = require_task_owner(task_id, x_api_key)
     if task.get("status") != "completed":
         raise HTTPException(status_code=409, detail="Task is not completed")
     output_path = Path(task.get("outputPath", ""))
@@ -1170,8 +1238,13 @@ def schedule_loop() -> None:
 
 @app.on_event("startup")
 def start_backup_scheduler() -> None:
-    global SCHEDULE_THREAD
+    global SCHEDULE_THREAD, TASK_DISPATCH_THREAD
     ensure_storage()
+    restore_task_queue()
+    TASK_DISPATCH_STOP.clear()
+    if not TASK_DISPATCH_THREAD or not TASK_DISPATCH_THREAD.is_alive():
+        TASK_DISPATCH_THREAD = threading.Thread(target=dispatch_tasks, daemon=True)
+        TASK_DISPATCH_THREAD.start()
     try:
         schedule_tick()
     except Exception:
@@ -1179,6 +1252,15 @@ def start_backup_scheduler() -> None:
     if not SCHEDULE_THREAD or not SCHEDULE_THREAD.is_alive():
         SCHEDULE_THREAD = threading.Thread(target=schedule_loop, daemon=True)
         SCHEDULE_THREAD.start()
+
+
+@app.on_event("shutdown")
+def stop_task_dispatcher() -> None:
+    TASK_DISPATCH_STOP.set()
+    with TASK_DISPATCH_CONDITION:
+        TASK_DISPATCH_CONDITION.notify_all()
+    if TASK_DISPATCH_THREAD and TASK_DISPATCH_THREAD.is_alive():
+        TASK_DISPATCH_THREAD.join(timeout=5)
 
 
 @app.get("/api/admin/backups/config")

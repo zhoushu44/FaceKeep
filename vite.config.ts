@@ -10,7 +10,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://127.0.0.1:7333',
+      '/api/': 'http://127.0.0.1:7333',
       '/health': 'http://127.0.0.1:7333',
       '/avatar': 'http://127.0.0.1:7333',
     },

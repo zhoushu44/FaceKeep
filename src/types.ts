@@ -63,6 +63,7 @@ export type BackupConfig = {
 export type ImageApiSettings = {
   endpointUrl: string;
   hasApiKey: boolean;
+  maxTaskWorkers: number;
 };
 
 export type BackupRecord = {

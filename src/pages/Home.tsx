@@ -8,10 +8,11 @@ import { ADMIN_SESSION_KEY, USER_SESSION_KEY, completeUpload, createSession, fet
 import { CHUNK_SIZE, formatBytes } from "@/lib/fileUtils";
 import { useFileStore } from "@/hooks/useFileStore";
 
+const BROWSER_REQUEST_WORKERS = 2;
+
 export default function Home() {
   const queue = useFileStore((state) => state.queue);
   const serverFiles = useFileStore((state) => state.serverFiles);
-  const concurrency = useFileStore((state) => state.concurrency);
   const updateFile = useFileStore((state) => state.updateFile);
   const setServerFiles = useFileStore((state) => state.setServerFiles);
   const addServerFile = useFileStore((state) => state.addServerFile);
@@ -53,7 +54,7 @@ export default function Home() {
 
   const runConcurrent = async (ids: string[], worker: (id: string) => Promise<void>) => {
     let cursor = 0;
-    const workerCount = Math.min(useFileStore.getState().concurrency, ids.length);
+    const workerCount = Math.min(BROWSER_REQUEST_WORKERS, ids.length);
     const runWorker = async () => {
       while (cursor < ids.length) {
         const id = ids[cursor];
@@ -80,14 +81,14 @@ export default function Home() {
         return;
       }
       const submitted = await submitImageTask(item.file, apiKey);
-      let task = await fetchImageTask(submitted.taskId);
+      let task = await fetchImageTask(submitted.taskId, apiKey);
       while (task.status === "queued" || task.status === "processing") {
         updateFile(item.id, { progress: task.progress });
         await new Promise((resolve) => window.setTimeout(resolve, 1000));
-        task = await fetchImageTask(submitted.taskId);
+        task = await fetchImageTask(submitted.taskId, apiKey);
       }
       if (task.status === "failed") throw new Error(task.error || "抠图失败，积分已退回");
-      const output = await fetchTaskImage(submitted.taskId);
+      const output = await fetchTaskImage(submitted.taskId, apiKey);
       const previousUrl = useFileStore.getState().queue.find((entry) => entry.id === item.id)?.cutoutUrl;
       if (previousUrl?.startsWith("blob:")) URL.revokeObjectURL(previousUrl);
       updateFile(item.id, { status: "cutout", progress: 100, cutoutUrl: URL.createObjectURL(output), taskId: submitted.taskId });
@@ -128,6 +129,7 @@ export default function Home() {
               <h1 className="max-w-3xl text-3xl font-black tracking-tight text-white md:text-5xl">上传、预览、续传与 PNG 标准输出，一屏完成。</h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">支持单张图片、多张批量、文件夹整体上传；断点续传实时进度；导出 PNG 宽 1500 像素，高度自适应，96 DPI。</p>
               <div className="mt-4 flex flex-wrap gap-3">
+                <Link className="inline-flex rounded-full border border-white/20 px-4 py-2 text-sm font-bold text-slate-200 transition hover:border-cyan-300/50 hover:text-cyan-100" to="/api-docs">API 文档</Link>
                 {!isAdmin && !isUser && <><Link className="inline-flex rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm font-bold text-cyan-100" to="/login">用户登录</Link><Link className="inline-flex rounded-full border border-amber-300/30 bg-amber-300/10 px-4 py-2 text-sm font-bold text-amber-100" to="/admin/login">管理员登录</Link></>}
                 {isUser && <><Link className="inline-flex rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm font-bold text-cyan-100" to="/user">积分中心</Link><button className="inline-flex rounded-full border border-white/20 px-4 py-2 text-sm font-bold" onClick={logout}>退出</button></>}
                 {isAdmin && <><Link className="inline-flex rounded-full border border-amber-300/30 bg-amber-300/10 px-4 py-2 text-sm font-bold text-amber-100" to="/admin">管理后台</Link><button className="inline-flex rounded-full border border-white/20 px-4 py-2 text-sm font-bold" onClick={logout}>退出</button></>}
