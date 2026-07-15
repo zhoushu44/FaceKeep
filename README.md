@@ -38,19 +38,17 @@ Invoke-WebRequest http://localhost:5173/ -UseBasicParsing
 
 ## Docker 部署
 
-### 镜像架构与数据持久化
+镜像在同一个容器中运行以下服务：
 
-镜像采用单容器架构，由 Supervisor 同时管理 Nginx 和 Uvicorn：
+- Nginx：监听 `0.0.0.0:9966`，托管前端并将 `/api`、`/health`、`/docs`、`/openapi.json` 等请求代理到后端。
+- FastAPI/Uvicorn：监听容器内部 `0.0.0.0:7333`。
+- Supervisor：负责启动和自动重启 Nginx、FastAPI。
 
-- Nginx 监听 `0.0.0.0:9966`，提供前端静态文件，并将 API、健康检查和 Swagger 等请求反向代理到 Uvicorn。
-- FastAPI/Uvicorn 在容器内部监听 `0.0.0.0:7333`。
-- 部署时只暴露并映射 Nginx 的 `9966` 端口，不直接将容器的 `7333` 端口暴露到宿主机或公网。
+### 1. 准备持久化目录和环境变量
 
-**必须将 `/app/uploads` 持久化挂载到宿主机。** metadata、用户、任务、积分、图像 API 配置、备份配置，以及任务输入和输出文件均保存在该目录。未挂载时，这些数据会随容器删除而丢失。
+必须持久化挂载 `/app/uploads`。用户、任务、积分、管理员图像 API 配置、备份配置及上传/输出文件均保存在该目录；不挂载时，删除容器会丢失这些数据。
 
-### 环境变量
-
-在宿主机创建 `.env.production`，示例：
+创建生产环境文件 `.env.production`：
 
 ```dotenv
 ADMIN_USERNAME=admin
@@ -59,118 +57,137 @@ CUTOUT_MODE=api
 IMAGE_API_MODEL=gpt-image-2
 ```
 
-推荐登录管理后台 `/admin/image-api-settings` 保存图像服务 Endpoint 和 Key。也可以在宿主机环境文件中配置：
+注意：
 
-```dotenv
-IMAGE_API_BASE_URL=https://你的图像服务地址
-IMAGE_API_KEY=你的图像服务密钥
-```
+- `.env` 和 `.env.*` 已被 `.dockerignore` 排除（示例文件 `.env.example` 除外），不会进入 Docker 构建上下文或镜像。
+- 推荐通过管理后台 `/admin/image-api-settings` 保存图像 API Endpoint 和 Key。Key 会保存在挂载的 `/app/uploads/metadata.json`，管理接口不会回显 Key。
+- 也可通过容器环境变量传入 `IMAGE_API_BASE_URL` 和 `IMAGE_API_KEY`；不要把真实密钥写入 Dockerfile、Git 仓库或镜像。
+- 首次部署必须立即修改示例管理员密码。
 
-密钥不要提交到 Git，也不要写入 Dockerfile 或构建进镜像。仓库 `.dockerignore` 已排除 `.env`；使用 `.env.production` 时同样不得提交，并应在镜像构建完成后创建，或将它放在 Docker 构建上下文之外。
+### 2. 本地构建并运行
 
-### 本地构建并运行
-
-PowerShell（在项目根目录执行）：
+PowerShell：
 
 ```powershell
 docker build -t facekeep:local .
-New-Item -ItemType Directory -Force .\uploads | Out-Null
-@"
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=请设置高强度管理员密码
-CUTOUT_MODE=api
-IMAGE_API_MODEL=gpt-image-2
-"@ | Set-Content -Encoding utf8 .\.env.production
-docker run -d --name facekeep --restart unless-stopped -p 9966:9966 --env-file .\.env.production --mount "type=bind,source=$((Resolve-Path .\uploads).Path),target=/app/uploads" facekeep:local
+docker run -d `
+  --name facekeep `
+  --restart unless-stopped `
+  -p 8080:9966 `
+  --env-file .env.production `
+  -v "${PWD}/uploads:/app/uploads" `
+  facekeep:local
 ```
 
-Linux/macOS（在项目根目录执行）：
+Linux/macOS：
 
 ```bash
 docker build -t facekeep:local .
-mkdir -p ./uploads
-cat > .env.production <<'EOF'
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=请设置高强度管理员密码
-CUTOUT_MODE=api
-IMAGE_API_MODEL=gpt-image-2
-EOF
-docker run -d --name facekeep --restart unless-stopped -p 9966:9966 --env-file ./.env.production --mount type=bind,source="$(pwd)/uploads",target=/app/uploads facekeep:local
-```
-
-本地访问地址为 `http://localhost:9966/`。以上本地构建只生成 `facekeep:local`，不会推送镜像到 Docker Hub。
-
-### 使用 Docker Hub 镜像部署
-
-先在服务器准备持久化目录和环境文件：
-
-```bash
-sudo mkdir -p /opt/facekeep/uploads
-sudo nano /opt/facekeep/.env.production
-```
-
-将上面的环境变量示例写入 `/opt/facekeep/.env.production`，然后拉取并运行镜像。请将命令中的 `<DOCKER_HUB_USERNAME>` 替换为实际 Docker Hub 用户名；完整镜像占位符为 **`<DOCKER_HUB_USERNAME>/facekeep:1.0`**，不要原样执行。
-
-```bash
-docker pull <DOCKER_HUB_USERNAME>/facekeep:1.0
 docker run -d \
   --name facekeep \
   --restart unless-stopped \
-  -p 9966:9966 \
-  --env-file /opt/facekeep/.env.production \
-  --mount type=bind,source=/opt/facekeep/uploads,target=/app/uploads \
-  <DOCKER_HUB_USERNAME>/facekeep:1.0
+  -p 8080:9966 \
+  --env-file .env.production \
+  -v "$(pwd)/uploads:/app/uploads" \
+  facekeep:local
 ```
 
-标准部署统一使用 `-p 9966:9966`。若宿主机 `9966` 端口已被占用，请先释放该端口；也可以选择其他空闲的宿主机端口映射到容器 `9966`，例如 `-p <其他宿主机端口>:9966`。
+访问地址：
 
-### 安全更新容器
+- 应用首页：`http://localhost:8080/`
+- 前端 API 文档：`http://localhost:8080/api-docs`
+- Swagger：`http://localhost:8080/docs`
+- 健康检查：`http://localhost:8080/health`
 
-更新前建议先备份 `/opt/facekeep/uploads`。拉取新镜像后停止并删除旧容器，再使用**相同的环境文件和 uploads 挂载**重新创建：
+不要直接暴露容器的 `7333` 端口；外部请求统一通过宿主机 `8080` 端口映射到容器 Nginx 的 `9966` 端口。
+
+### 3. Docker Hub 镜像部署
+
+GitHub Actions 会发布以下两个同内容标签：
+
+```text
+DOCKER_HUB_USERNAME/facekeep:3.0
+DOCKER_HUB_USERNAME/facekeep:latest
+```
+
+服务器部署：
 
 ```bash
-docker pull <DOCKER_HUB_USERNAME>/facekeep:1.0
+mkdir -p /opt/facekeep/uploads
+cd /opt/facekeep
+docker pull DOCKER_HUB_USERNAME/facekeep:3.0
+docker run -d \
+  --name facekeep \
+  --restart unless-stopped \
+  -p 8080:9966 \
+  --env-file /opt/facekeep/.env.production \
+  -v /opt/facekeep/uploads:/app/uploads \
+  DOCKER_HUB_USERNAME/facekeep:3.0
+```
+
+宿主机 Nginx、宝塔或其他网关应反向代理到 `http://127.0.0.1:8080`，由 Docker 的 `8080:9966` 端口映射进入容器。
+外层 Nginx 还应设置 `client_max_body_size 100m;`，否则上传或提交较大的原图时可能返回 `413 Request Entity Too Large`。
+
+### 4. 更新容器
+
+```bash
+docker pull DOCKER_HUB_USERNAME/facekeep:3.0
 docker stop facekeep
 docker rm facekeep
 docker run -d \
   --name facekeep \
   --restart unless-stopped \
-  -p 9966:9966 \
+  -p 8080:9966 \
   --env-file /opt/facekeep/.env.production \
-  --mount type=bind,source=/opt/facekeep/uploads,target=/app/uploads \
-  <DOCKER_HUB_USERNAME>/facekeep:1.0
+  -v /opt/facekeep/uploads:/app/uploads \
+  DOCKER_HUB_USERNAME/facekeep:3.0
 ```
 
-不要使用会删除 volume 或宿主机 uploads 数据的命令。删除并重建容器不会影响正确 bind mount 到 `/opt/facekeep/uploads` 的数据。
+数据保存在宿主机 `/opt/facekeep/uploads`，重建容器不会删除。升级前建议先在管理员备份页面创建备份，并额外备份该目录。
 
-### 健康验证与日志
+### 5. 部署验证与排障
 
 ```bash
-docker ps
-docker logs --tail 200 facekeep
-curl http://localhost:9966/health
-curl -I http://localhost:9966/
-curl -I http://localhost:9966/docs
+docker ps --filter name=facekeep
+docker logs --tail 100 facekeep
+curl -f http://127.0.0.1:8080/health
+curl -I http://127.0.0.1:8080/
+curl -I http://127.0.0.1:8080/docs
 ```
 
-若将其他宿主机端口映射到容器 `9966`，请将验证地址中的 `9966` 相应替换为所选宿主机端口。持续查看日志可执行 `docker logs -f facekeep`。
+统一使用 `8080:9966` 映射，健康检查地址为 `http://127.0.0.1:8080/health`，应返回：
 
-### 常见问题
+```json
+{"status":"ok"}
+```
 
-- **图像 API 调用失败**：先执行 `docker logs --tail 200 facekeep` 查看后端错误，再核对管理后台或环境变量中的 Endpoint、Key 和模型。
-- **重建容器后数据丢失**：检查 `docker inspect facekeep`，确认宿主机 uploads 目录确实 bind mount 到 `/app/uploads`，并确认重新运行时使用了同一路径。
-- **已配置 API 但仍未调用**：API 模式要求 `CUTOUT_MODE=api`；修改环境文件后必须停止并重新创建容器，单纯重启不会重新读取已变化的 `--env-file`。
-- **第三方图像服务不兼容**：Endpoint 应兼容 OpenAI 的 `/v1/images/edits` 接口。
-- **上传返回 `413 Request Entity Too Large`**：当前容器 Nginx 的 `client_max_body_size` 上限为 `100m`，需缩小单次上传内容；如需提高上限，应同步调整 `docker/nginx.conf` 并重新构建镜像。
+常见问题：
 
-### GitHub Actions 自动发布
+- 页面可打开但 API 失败：检查 `docker logs facekeep`，确认 Uvicorn 已监听 `0.0.0.0:7333`。
+- 重建容器后数据消失：确认运行参数包含 `-v <宿主机目录>:/app/uploads`。
+- 图像任务仍走本地模式：确认容器环境变量为 `CUTOUT_MODE=api`，然后重启容器。
+- 图像 API 调用失败：在管理员图像 API 设置页确认 Endpoint、Key 和模型服务兼容 OpenAI `/v1/images/edits` 协议。
+- 上传返回 `413`：容器内和宿主机 Nginx 都需要配置 `client_max_body_size 100m;`。
 
-工作流 `.github/workflows/docker-publish.yml` 会在代码 push 到 `main` 或 `master` 分支时运行。仓库需要配置以下 GitHub Actions Secrets：
+### 6. GitHub Actions 自动发布
 
-- `DOCKER_HUB_USERNAME`：Docker Hub 用户名。
-- `DOCKER_HUB_TOKEN`：Docker Hub Access Token。
+工作流位于 `.github/workflows/docker-publish.yml`，push 到 `main` 或 `master` 时自动构建并推送镜像。本地不会执行推送。
 
-同一次构建会推送 `${DOCKER_HUB_USERNAME}/facekeep:1.0` 和 `${DOCKER_HUB_USERNAME}/facekeep:latest` 两个标签。前述本地 `docker build` 命令不会执行推送。
+在 GitHub 仓库 `Settings → Secrets and variables → Actions` 中配置：
+
+```text
+DOCKER_HUB_USERNAME
+DOCKER_HUB_TOKEN
+```
+
+工作流将同一次构建推送为：
+
+```text
+<DOCKER_HUB_USERNAME>/facekeep:3.0
+<DOCKER_HUB_USERNAME>/facekeep:latest
+```
+
+`.dockerignore` 保持排除 `.env`、`uploads`、`.git`、`node_modules` 和构建产物，防止本地密钥、运行数据和无关文件进入镜像。
 
 ## 页面与管理功能
 

@@ -848,31 +848,32 @@ async def create_avatar(
 @app.post("/api/uploads/session")
 def create_upload_session(payload: UploadSessionRequest) -> dict:
     ensure_storage()
-    meta = load_meta()
-    sessions = meta.setdefault("sessions", {})
+    with BACKUP_LOCK:
+        meta = load_meta()
+        sessions = meta.setdefault("sessions", {})
 
-    for upload_id, session in sessions.items():
-        if session.get("fingerprint") == payload.fingerprint and session.get("status") != "completed" and (CHUNKS_DIR / upload_id).exists():
-            session["updatedAt"] = utc_now()
-            save_meta(meta)
-            return {"uploadId": upload_id, "uploadedChunks": get_uploaded_chunks(upload_id)}
+        for upload_id, session in sessions.items():
+            if session.get("fingerprint") == payload.fingerprint and session.get("status") != "completed" and (CHUNKS_DIR / upload_id).exists():
+                session["updatedAt"] = utc_now()
+                save_meta(meta)
+                return {"uploadId": upload_id, "uploadedChunks": get_uploaded_chunks(upload_id)}
 
-    upload_id = uuid.uuid4().hex
-    sessions[upload_id] = {
-        "uploadId": upload_id,
-        "fingerprint": payload.fingerprint,
-        "fileName": sanitize_name(payload.fileName),
-        "fileSize": payload.fileSize,
-        "fileType": payload.fileType,
-        "relativePath": payload.relativePath,
-        "totalChunks": payload.totalChunks,
-        "status": "uploading",
-        "createdAt": utc_now(),
-        "updatedAt": utc_now(),
-    }
-    (CHUNKS_DIR / upload_id).mkdir(parents=True, exist_ok=True)
-    save_meta(meta)
-    return {"uploadId": upload_id, "uploadedChunks": []}
+        upload_id = uuid.uuid4().hex
+        sessions[upload_id] = {
+            "uploadId": upload_id,
+            "fingerprint": payload.fingerprint,
+            "fileName": sanitize_name(payload.fileName),
+            "fileSize": payload.fileSize,
+            "fileType": payload.fileType,
+            "relativePath": payload.relativePath,
+            "totalChunks": payload.totalChunks,
+            "status": "uploading",
+            "createdAt": utc_now(),
+            "updatedAt": utc_now(),
+        }
+        (CHUNKS_DIR / upload_id).mkdir(parents=True, exist_ok=True)
+        save_meta(meta)
+        return {"uploadId": upload_id, "uploadedChunks": []}
 
 
 @app.post("/api/uploads/chunk")
@@ -883,21 +884,32 @@ async def upload_chunk(
     chunk: UploadFile = File(...),
 ) -> dict:
     ensure_storage()
-    meta = load_meta()
-    session = meta.get("sessions", {}).get(uploadId)
-    if not session or session.get("fingerprint") != fingerprint:
-        raise HTTPException(status_code=404, detail="Upload session not found")
+    with BACKUP_LOCK:
+        session = load_meta().get("sessions", {}).get(uploadId)
+        if not session or session.get("fingerprint") != fingerprint or session.get("status") == "completed":
+            raise HTTPException(status_code=404, detail="Upload session not found")
+        total = max(int(session["totalChunks"]), 1)
+        if chunkIndex < 0 or chunkIndex >= total:
+            raise HTTPException(status_code=400, detail="Chunk index is out of range")
 
     chunk_dir = CHUNKS_DIR / uploadId
     chunk_dir.mkdir(parents=True, exist_ok=True)
     chunk_path = chunk_dir / f"{chunkIndex}.part"
-    with chunk_path.open("wb") as output:
-        shutil.copyfileobj(chunk.file, output)
-
-    uploaded = get_uploaded_chunks(uploadId)
-    total = max(int(session["totalChunks"]), 1)
-    session["updatedAt"] = utc_now()
-    save_meta(meta)
+    temp_path = chunk_dir / f"{chunkIndex}.{uuid.uuid4().hex}.tmp"
+    try:
+        with temp_path.open("wb") as output:
+            shutil.copyfileobj(chunk.file, output)
+        with BACKUP_LOCK:
+            meta = load_meta()
+            session = meta.get("sessions", {}).get(uploadId)
+            if not session or session.get("fingerprint") != fingerprint or session.get("status") == "completed":
+                raise HTTPException(status_code=404, detail="Upload session not found")
+            temp_path.replace(chunk_path)
+            uploaded = get_uploaded_chunks(uploadId)
+            session["updatedAt"] = utc_now()
+            save_meta(meta)
+    finally:
+        temp_path.unlink(missing_ok=True)
     return {
         "uploadId": uploadId,
         "chunkIndex": chunkIndex,
@@ -909,40 +921,47 @@ async def upload_chunk(
 @app.post("/api/uploads/complete")
 def complete_upload(payload: CompleteUploadRequest) -> dict:
     ensure_storage()
-    meta = load_meta()
-    session = meta.get("sessions", {}).get(payload.uploadId)
-    if not session:
-        raise HTTPException(status_code=404, detail="Upload session not found")
+    with BACKUP_LOCK:
+        meta = load_meta()
+        session = meta.get("sessions", {}).get(payload.uploadId)
+        if not session:
+            raise HTTPException(status_code=404, detail="Upload session not found")
 
-    total = int(session["totalChunks"])
-    uploaded = get_uploaded_chunks(payload.uploadId)
-    if uploaded != list(range(total)):
-        raise HTTPException(status_code=400, detail="Upload chunks are incomplete")
+        if session.get("status") == "completed" and session.get("fileId"):
+            existing = next((item for item in meta.get("files", []) if item.get("id") == session["fileId"]), None)
+            if existing and Path(existing.get("path", "")).exists():
+                return {"file": to_public_file(existing)}
 
-    file_id = uuid.uuid4().hex
-    filename = sanitize_name(session["fileName"])
-    target = FILES_DIR / f"{file_id}_{filename}"
-    with target.open("wb") as output:
-        for index in range(total):
-            chunk_path = CHUNKS_DIR / payload.uploadId / f"{index}.part"
-            with chunk_path.open("rb") as source:
-                shutil.copyfileobj(source, output)
+        total = int(session["totalChunks"])
+        uploaded = get_uploaded_chunks(payload.uploadId)
+        if uploaded != list(range(total)):
+            raise HTTPException(status_code=400, detail="Upload chunks are incomplete")
 
-    item = {
-        "id": file_id,
-        "fileName": filename,
-        "fileSize": target.stat().st_size,
-        "fileType": session.get("fileType", ""),
-        "relativePath": session.get("relativePath"),
-        "path": str(target),
-        "createdAt": utc_now(),
-    }
-    session["status"] = "completed"
-    session["updatedAt"] = utc_now()
-    meta.setdefault("files", []).insert(0, item)
-    save_meta(meta)
-    shutil.rmtree(CHUNKS_DIR / payload.uploadId, ignore_errors=True)
-    return {"file": to_public_file(item)}
+        file_id = uuid.uuid4().hex
+        filename = sanitize_name(session["fileName"])
+        target = FILES_DIR / f"{file_id}_{filename}"
+        with target.open("wb") as output:
+            for index in range(total):
+                chunk_path = CHUNKS_DIR / payload.uploadId / f"{index}.part"
+                with chunk_path.open("rb") as source:
+                    shutil.copyfileobj(source, output)
+
+        item = {
+            "id": file_id,
+            "fileName": filename,
+            "fileSize": target.stat().st_size,
+            "fileType": session.get("fileType", ""),
+            "relativePath": session.get("relativePath"),
+            "path": str(target),
+            "createdAt": utc_now(),
+        }
+        session["status"] = "completed"
+        session["fileId"] = file_id
+        session["updatedAt"] = utc_now()
+        meta.setdefault("files", []).insert(0, item)
+        save_meta(meta)
+        shutil.rmtree(CHUNKS_DIR / payload.uploadId, ignore_errors=True)
+        return {"file": to_public_file(item)}
 
 
 @app.post("/api/tasks/submit")

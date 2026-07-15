@@ -5,6 +5,8 @@ node_modules
 dist
 uploads
 .env
+.env.*
+!.env.example
 *.log
 __pycache__
 *.py[cod]

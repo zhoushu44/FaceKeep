@@ -31,7 +31,7 @@ jobs:
         with:
           images: ${{ secrets.DOCKER_HUB_USERNAME }}/facekeep
           tags: |
-            type=raw,value=2.1
+            type=raw,value=3.0
             type=raw,value=latest
 
       - name: Build and push image
